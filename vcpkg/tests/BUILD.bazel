@@ -1,0 +1,3 @@
+load("//vcpkg/tests:hash_utils_tests.bzl", "hash_utils_test_suite")
+
+hash_utils_test_suite()

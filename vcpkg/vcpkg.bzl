@@ -1,0 +1,72 @@
+VcpkgPackageInfo = provider(
+    fields = [
+        "name",
+        "port",
+        "buildtree",
+    ],
+)
+
+VcpkgPackageDepsInfo = provider(
+    fields = [
+        "deps",
+    ],
+)
+
+def _vcpkg_build_impl(ctx):
+    # TODO: Invent something
+    return [
+        VcpkgPackageInfo(
+            name = ctx.attr.name,
+            port = ctx.files.port,
+            buildtree = ctx.files.buildtree,
+        ),
+        VcpkgPackageDepsInfo(
+            deps = depset(transitive = [
+                dep[VcpkgPackageDepsInfo].deps
+                for dep in ctx.attr.deps
+            ]),
+        ),
+    ]
+
+vcpkg_build = rule(
+    implementation = _vcpkg_build_impl,
+    attrs = {
+        "port": attr.label(allow_files = True),
+        "buildtree": attr.label(allow_files = True),
+        "deps": attr.label_list(providers = [
+            VcpkgPackageInfo,
+            VcpkgPackageDepsInfo,
+        ]),
+    },
+)
+
+_BAZEL_PACKAGE_TPL = """\
+load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
+
+vcpkg_build(
+    name = "{package}",
+    port = "@vcpkg//vcpkg/ports:{package}",
+    buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
+    deps = [
+{deps}
+    ],
+    visibility = ["//visibility:public"],
+)
+"""
+
+def _vcpkg_package_impl(rctx):
+    rctx.file("BUILD.bazel", _BAZEL_PACKAGE_TPL.format(
+        package = rctx.attr.package,
+        deps = "\n".join([
+            "       \"@vcpkg_{dep}//:{dep}\",".format(dep = dep)
+            for dep in rctx.attr.deps
+        ]),
+    ))
+
+vcpkg_package = repository_rule(
+    implementation = _vcpkg_package_impl,
+    attrs = {
+        "package": attr.string(doc = "Package name"),
+        "deps": attr.string_list(doc = "Dependencies of the package"),
+    },
+)
