@@ -1,6 +1,5 @@
 load("//vcpkg:vcpkg.bzl", "vcpkg_package")
 load("//vcpkg/bootstrap:bootstrap.bzl", _bootstrap = "bootstrap")
-load("//vcpkg/bootstrap:collect_depend_info.bzl", "collect_depend_info")
 
 bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version"),
@@ -41,17 +40,10 @@ def _vcpkg(mctx):
         packages = packages,
     )
 
-    depend_info = collect_depend_info(
-        mctx,
-        "../../external/+vcpkg+vcpkg",
-        list(packages),
-    )
-
-    for package, deps in depend_info.items():
+    for package in packages:
         vcpkg_package(
             name = "vcpkg_%s" % package,
             package = package,
-            deps = deps,
         )
 
 vcpkg = module_extension(

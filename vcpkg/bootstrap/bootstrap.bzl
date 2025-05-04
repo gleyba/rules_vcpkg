@@ -3,7 +3,8 @@ load("//vcpkg/bootstrap:vcpkg_exec.bzl", "vcpkg_exec")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
-_BUILD_BAZEL_TEMPLATE = """\
+_BUILD_BAZEL_TPL = """\
+load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
 
 vcpkg_toolchain(
@@ -34,12 +35,35 @@ toolchain(
     toolchain_type = "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
     visibility = ["//visibility:public"],
 )
+
+{packages}
+"""
+
+_VCPKG_PACKAGE_TPL = """\
+vcpkg_build(
+    name = "{package}",
+    port = "@vcpkg//vcpkg/ports:{package}",
+    buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
+    deps = [
+{deps}
+    ],
+    visibility = ["//visibility:public"],
+)
 """
 
 _VCPKG_BAZEL = """\
 filegroup(
-    name = "vcpkg",
+    name = "vcpkg_tool",
     srcs = ["vcpkg"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "vcpkg",
+    srcs = [
+        ":vcpkg_tool",
+        "vckpg.json",
+    ],
     visibility = ["//visibility:public"],
 )
 """
@@ -85,7 +109,7 @@ filegroup(
 """
 
 def _bootstrap(rctx, output, release, sha256, packages):
-    pu = platform_utils(rctx, release)
+    pu = platform_utils(rctx)
 
     rctx.download_and_extract(
         url = "https://github.com/microsoft/vcpkg/archive/refs/tags/%s.tar.gz" % release,
@@ -140,9 +164,19 @@ def _bootstrap(rctx, output, release, sha256, packages):
         packages,
     )
 
-    rctx.file("BUILD.bazel", _BUILD_BAZEL_TEMPLATE.format(
+    rctx.file("BUILD.bazel", _BUILD_BAZEL_TPL.format(
         os = pu.targets.os,
         arch = pu.targets.arch,
+        packages = "\n".join([
+            _VCPKG_PACKAGE_TPL.format(
+                package = package,
+                deps = "\n".join([
+                    "       \":{dep}\",".format(dep = dep)
+                    for dep in deps
+                ]),
+            )
+            for package, deps in depend_info.items()
+        ]),
     ))
 
     rctx.file("vcpkg/BUILD.bazel", _VCPKG_BAZEL)

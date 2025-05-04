@@ -1,0 +1,17 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load(":platform_utils.bzl", "vcpkg_platform_triplet")
+
+config_setting(
+    name = "arm64_osx",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:osx",
+    ],
+)
+
+vcpkg_platform_triplet(
+    name = "vcpkg_triplet",
+    triplet = select({
+        ":arm64_osx": "arm64-osx",
+    }),
+)

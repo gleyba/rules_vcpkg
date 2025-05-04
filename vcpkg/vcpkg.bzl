@@ -13,6 +13,8 @@ VcpkgPackageDepsInfo = provider(
 )
 
 def _vcpkg_build_impl(ctx):
+    vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
+
     # TODO: Invent something
     return [
         VcpkgPackageInfo(
@@ -38,35 +40,30 @@ vcpkg_build = rule(
             VcpkgPackageDepsInfo,
         ]),
     },
+    toolchains = [
+        "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
+    ],
 )
 
 _BAZEL_PACKAGE_TPL = """\
-load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
-
-vcpkg_build(
+alias(
     name = "{package}",
-    port = "@vcpkg//vcpkg/ports:{package}",
-    buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
-    deps = [
-{deps}
-    ],
+    actual = "@vckp//:{package}",
     visibility = ["//visibility:public"],
 )
 """
 
 def _vcpkg_package_impl(rctx):
-    rctx.file("BUILD.bazel", _BAZEL_PACKAGE_TPL.format(
-        package = rctx.attr.package,
-        deps = "\n".join([
-            "       \"@vcpkg_{dep}//:{dep}\",".format(dep = dep)
-            for dep in rctx.attr.deps
-        ]),
-    ))
+    rctx.file(
+        "BUILD.bazel",
+        _BAZEL_PACKAGE_TPL.format(
+            package = rctx.attr.package,
+        ),
+    )
 
 vcpkg_package = repository_rule(
     implementation = _vcpkg_package_impl,
     attrs = {
         "package": attr.string(doc = "Package name"),
-        "deps": attr.string_list(doc = "Dependencies of the package"),
     },
 )

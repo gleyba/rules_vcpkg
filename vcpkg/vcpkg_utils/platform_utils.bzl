@@ -38,10 +38,20 @@ def _platform_downloads(rctx):
 
     return struct(url_tpl = url_tpl, sha_key = sha_key)
 
-def platform_utils(rctx, release):
+def platform_utils(rctx):
     """Platform utils for vcpkg"""
     return struct(
         prefix = _platform_prefix(rctx),
         targets = _platform_targets(rctx),
         downloads = _platform_downloads(rctx),
     )
+
+VcpkgPlatformTrippletProvider = provider(
+    doc = "Vcpkg platform triplet provider",
+    fields = ["triplet"],
+)
+
+vcpkg_platform_triplet = rule(
+    implementation = lambda ctx: VcpkgPlatformTrippletProvider(triplet = ctx.attr.triplet),
+    attrs = {"triplet": attr.string(doc = "Vcpkg platform triplet")},
+)

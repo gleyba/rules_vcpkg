@@ -13,10 +13,11 @@ def exec_check(
     if res.return_code == 0:
         return res
 
-    print("%s failed with code %d" % (mnemo, res.return_code))
-    print("stdout: %s" % res.stdout)
-    print("stderr: %s" % res.stderr)
-    fail("%s failed" % mnemo)
+    fail("\n".join([
+        "%s failed with code %d" % (mnemo, res.return_code),
+        "stdout: %s" % res.stdout,
+        "stderr: %s" % res.stderr,
+    ]))
 
 def vcpkg_exec(rctx, cmd, args, workdir):
     full_path = str(rctx.path(workdir))
