@@ -3,21 +3,39 @@ load("//vcpkg/bootstrap:vcpkg_exec.bzl", "vcpkg_exec")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
+_VCPKG_WRAPPER = """\
+#!/usr/bin/env bash
+
+set -eux
+
+export HOME=/tmp/home
+export PATH="${PWD}/${CMAKE_BIN}:/usr/bin:/bin"
+
+SCRIPT_DIR=$(dirname "$0")
+
+exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
+"""
+
 _BUILD_BAZEL_TPL = """\
 load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
 
 vcpkg_toolchain(
     name = "vcpkg",
-    vcpkg_tool = "//vcpkg",
-    default_install_files = [
-        "//install",
-    ],
+    vcpkg_tool = "vcpkg_wrapper.sh",
+    vcpkg_manifest = ":vcpkg.json",
+    # default_install_files = [
+    #     "//install",
+    # ],
     vcpkg_files = [
-        "//vcpkg",
+        "//vcpkg:vcpkg",
+        "//vcpkg:LICENSE.txt",
         "//vcpkg/scripts",
         "//vcpkg/triplets",
         "//vcpkg/downloads",
+    ],
+    cmake_files = [
+        "@cmake//:cmake_data",
     ],
 )
 
@@ -44,37 +62,28 @@ vcpkg_build(
     name = "{package}",
     port = "@vcpkg//vcpkg/ports:{package}",
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
-    deps = [
-{deps}
-    ],
+    deps = [{deps}],
     visibility = ["//visibility:public"],
 )
 """
 
 _VCPKG_BAZEL = """\
-filegroup(
-    name = "vcpkg_tool",
-    srcs = ["vcpkg"],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "vcpkg",
+exports_files(
     srcs = [
-        ":vcpkg_tool",
-        "vckpg.json",
+        "vcpkg",
+        "LICENSE.txt",    
     ],
     visibility = ["//visibility:public"],
 )
 """
 
-_INSTALL_BAZEL = """\
-filegroup(
-    name = "install",
-    srcs = glob(["**/*"]),
-    visibility = ["//visibility:public"],
-)
-"""
+# _INSTALL_BAZEL = """\
+# filegroup(
+#     name = "install",
+#     srcs = glob(["**/*"]),
+#     visibility = ["//visibility:public"],
+# )
+# """
 
 _DOWNLOADS_BAZEL = """\
 filegroup(
@@ -151,6 +160,12 @@ def _bootstrap(rctx, output, release, sha256, packages):
         }),
     )
 
+    rctx.file(
+        "vcpkg_wrapper.sh",
+        _VCPKG_WRAPPER,
+        executable = True,
+    )
+
     vcpkg_exec(
         rctx,
         "install",
@@ -170,17 +185,18 @@ def _bootstrap(rctx, output, release, sha256, packages):
         packages = "\n".join([
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
-                deps = "\n".join([
+                deps = "" if not deps else "\n" + "\n".join([
                     "       \":{dep}\",".format(dep = dep)
                     for dep in deps
-                ]),
+                ]) + "\n    ",
             )
             for package, deps in depend_info.items()
         ]),
     ))
 
     rctx.file("vcpkg/BUILD.bazel", _VCPKG_BAZEL)
-    rctx.file("install/BUILD.bazel", _INSTALL_BAZEL)
+
+    # rctx.file("install/BUILD.bazel", _INSTALL_BAZEL)
     rctx.file("vcpkg/downloads/BUILD.bazel", _DOWNLOADS_BAZEL)
     rctx.file("vcpkg/scripts/BUILD.bazel", _SCRIPTS_BAZEL)
     rctx.file("vcpkg/triplets/BUILD.bazel", _TRIPLETS_BAZEL)

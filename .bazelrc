@@ -1,6 +1,7 @@
 common --nosandbox_default_allow_network
 common --incompatible_allow_tags_propagation
 
+build --incompatible_strict_action_env
 build --experimental_reuse_sandbox_directories
 
 build --nolegacy_external_runfiles
