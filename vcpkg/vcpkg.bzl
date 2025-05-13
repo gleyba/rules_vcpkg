@@ -134,10 +134,45 @@ vcpkg_build = rule(
     ],
 )
 
+def _vcpkg_package_link_transition_impl(settings, attr):
+    _ignore = (settings, attr)
+    return {
+        "//command_line_option:compilation_mode": "fastbuild",
+    }
+
+vcpkg_package_link_transition = transition(
+    implementation = _vcpkg_package_link_transition_impl,
+    inputs = [],
+    outputs = [
+        "//command_line_option:compilation_mode",
+    ],
+)
+
+def _vcpkg_package_link_impl(ctx):
+    return ctx.attr.package[0][DefaultInfo]
+
+vcpkg_package_link = rule(
+    implementation = _vcpkg_package_link_impl,
+    attrs = {
+        "package": attr.label(
+            mandatory = True,
+            # Call to `vcpkg build` produce both debug and release artifacts.
+            # Lets use this transition hack to not to break cacheability
+            # when `-c opt` or `-c dbg` command line options are used.
+            # Our transition will override the compilation mode to fastbuild,
+            # and have same output paths.
+            cfg = vcpkg_package_link_transition,
+            doc = "Package to link",
+        ),
+    },
+)
+
 _BAZEL_PACKAGE_TPL = """\
-alias(
+load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_package_link")
+
+vcpkg_package_link(
     name = "{package}",
-    actual = "@vcpkp//:{package}",
+    package = "@vcpkg//:{package}",
     visibility = ["//visibility:public"],
 )
 """

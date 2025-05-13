@@ -146,8 +146,8 @@
   "moduleExtensions": {
     "//vcpkg:extensions.bzl%vcpkg": {
       "general": {
-        "bzlTransitiveDigest": "IppZMi9EsnZCIKzuZJno1UfUPMbEp84U+/1Qo51Yj2Q=",
-        "usagesDigest": "otvuVAVdZ8mLMFU7p1D8gAVGJyiZUO1Vx8OscRFP1EA=",
+        "bzlTransitiveDigest": "oVrAlSfL33VrtrKpftZeKh8T6BdSBg/3PXDVB3KSFQ4=",
+        "usagesDigest": "PqbLqo3jeNCqcSdCdXI5trlYJm26NFDscYy1CWlVpWw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -169,8 +169,15 @@
               "release": "2025.04.09",
               "sha256": "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
               "packages": [
+                "vcpkg-cmake",
                 "fmt"
               ]
+            }
+          },
+          "vcpkg_vcpkg-cmake": {
+            "repoRuleId": "@@//vcpkg:vcpkg.bzl%vcpkg_package",
+            "attributes": {
+              "package": "vcpkg-cmake"
             }
           },
           "vcpkg_fmt": {
