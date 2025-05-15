@@ -30,6 +30,7 @@ vcpkg_toolchain(
     vcpkg_files = [
         "//vcpkg:vcpkg",
         "//vcpkg:LICENSE.txt",
+        "//vcpkg:.vcpkg-root",
         "//vcpkg/scripts",
         "//vcpkg/triplets",
         "//vcpkg/downloads",
@@ -71,6 +72,7 @@ _VCPKG_BAZEL = """\
 exports_files(
     srcs = [
         "vcpkg",
+        ".vcpkg-root",
         "LICENSE.txt",    
     ],
     visibility = ["//visibility:public"],
@@ -88,7 +90,7 @@ exports_files(
 _DOWNLOADS_BAZEL = """\
 filegroup(
     name = "downloads",
-    srcs = glob(["tools/**/*"]),
+    srcs = glob(["**/*"]),
     visibility = ["//visibility:public"],
 )
 """

@@ -146,7 +146,7 @@
   "moduleExtensions": {
     "//vcpkg:extensions.bzl%vcpkg": {
       "general": {
-        "bzlTransitiveDigest": "oVrAlSfL33VrtrKpftZeKh8T6BdSBg/3PXDVB3KSFQ4=",
+        "bzlTransitiveDigest": "P/1K14y4FVgQZd+4/0S3JjcJe8oQ9stQ2NerDg2+L6g=",
         "usagesDigest": "PqbLqo3jeNCqcSdCdXI5trlYJm26NFDscYy1CWlVpWw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

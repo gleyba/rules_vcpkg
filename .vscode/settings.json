@@ -50,6 +50,8 @@
         "map": "cpp",
         "set": "cpp",
         "span": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "fstream": "cpp",
+        "source_location": "cpp"
     }
 }

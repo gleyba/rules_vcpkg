@@ -10,6 +10,15 @@ VcpkgPackageInfo = provider(
     ],
 )
 
+VcpkgBuiltPackageInfo = provider(
+    doc = "Vcpkg built package info",
+    fields = [
+        "name",
+        "port",
+        "output",
+    ],
+)
+
 VcpkgPackageDepsInfo = provider(
     doc = "Vcpkg package dependencies",
     fields = [
@@ -25,55 +34,68 @@ def _vcpkg_build_impl(ctx):
     cmake_bin = "/".join(cmake_data[0].path.split("/")[0:2] + ["bin"])
 
     deps_info = VcpkgPackageDepsInfo(
-        deps = depset(transitive = [
-            dep[VcpkgPackageDepsInfo].deps
-            for dep in ctx.attr.deps
-        ]),
+        deps = depset(
+            [
+                dep[VcpkgBuiltPackageInfo]
+                for dep in ctx.attr.deps
+            ],
+            transitive = [
+                dep[VcpkgPackageDepsInfo].deps
+                for dep in ctx.attr.deps
+            ],
+        ),
     )
 
-    package_info = VcpkgPackageInfo(
-        name = ctx.attr.name,
-        port = ctx.files.port,
-        buildtree = ctx.files.buildtree,
-    )
-
-    triplet = ctx.attr._tripplet[VcpkgPlatformTrippletProvider].triplet
     install_dir = ctx.actions.declare_directory("%s/install" % ctx.attr.name)
+
+    deps_list = deps_info.deps.to_list()
+    deps_outputs = [
+        dep_info.output
+        for dep_info in deps_list
+    ]
+    deps_ports = [
+        dep_info.port
+        for dep_info in deps_list
+    ]
+
+    prepare_install_dir_args = ctx.actions.args()
+    prepare_install_dir_args.add(install_dir.path)
+    prepare_install_dir_args.add(vcpkg_info.vcpkg_manifest)
+    for dep_output in deps_outputs:
+        prepare_install_dir_args.add(dep_output.path)
 
     ctx.actions.run(
         inputs = [
             vcpkg_info.vcpkg_manifest,
-        ],
+        ] + deps_outputs,
         outputs = [
             install_dir,
         ],
         executable = ctx.executable._prepare_install_dir,
-        arguments = [
-            install_dir.path,
-            triplet,
-            vcpkg_info.vcpkg_manifest.path,
-        ],
+        arguments = [prepare_install_dir_args],
     )
 
-    package_output_dir = ctx.actions.declare_directory("{name}/packages/{name}_{triplet}".format(
-        name = ctx.attr.name,
-        triplet = triplet,
-    ))
-
-    inputs = vcpkg_info.vcpkg_files.files.to_list() + cmake_data + [
+    inputs = [
         vcpkg_info.vcpkg_manifest,
         install_dir,
+    ] + [
+        item
+        for sublist in [
+            ctx.files.port,
+            ctx.files.buildtree,
+            vcpkg_info.vcpkg_files.files.to_list(),
+            cmake_data,
+            deps_outputs,
+        ] + deps_ports
+        for item in sublist
     ]
-
-    for dep_info in [dep[VcpkgPackageInfo] for dep in deps_info.deps.to_list()] + [package_info]:
-        inputs += dep_info.buildtree
-        inputs += dep_info.port
 
     vcpkg_root = "%s/vcpkg" % paths.dirname(vcpkg_info.vcpkg_tool.path)
 
-    # print("vcpkg root: %s" % vcpkg_root)
-    packages_dir = paths.dirname(package_output_dir.path)
-    # print("packages dir: %s" % packages_dir)
+    package_output_dir = ctx.actions.declare_directory("{name}/packages/{name}_{triplet}".format(
+        name = ctx.attr.name,
+        triplet = ctx.attr._tripplet[VcpkgPlatformTrippletProvider].triplet,
+    ))
 
     ctx.actions.run(
         tools = [
@@ -89,9 +111,9 @@ def _vcpkg_build_impl(ctx):
             ctx.attr.name,
             "--vcpkg-root=%s" % vcpkg_root,
             "--x-buildtrees-root=%s/buildtrees" % vcpkg_root,
-            "--downloads-root=downloads=%s/downloads" % vcpkg_root,
+            "--downloads-root=%s/downloads" % vcpkg_root,
             "--x-install-root=%s" % install_dir.path,
-            "--x-packages-root=%s" % packages_dir,
+            "--x-packages-root=%s" % paths.dirname(package_output_dir.path),
         ],
         env = {
             "CMAKE_BIN": cmake_bin,
@@ -105,7 +127,11 @@ def _vcpkg_build_impl(ctx):
             install_dir,
             package_output_dir,
         ])),
-        package_info,
+        VcpkgBuiltPackageInfo(
+            name = ctx.attr.name,
+            port = ctx.files.port,
+            output = package_output_dir,
+        ),
         deps_info,
     ]
 
@@ -115,7 +141,7 @@ vcpkg_build = rule(
         "port": attr.label(allow_files = True),
         "buildtree": attr.label(allow_files = True),
         "deps": attr.label_list(providers = [
-            VcpkgPackageInfo,
+            VcpkgBuiltPackageInfo,
             VcpkgPackageDepsInfo,
         ]),
         "_tripplet": attr.label(
@@ -149,7 +175,11 @@ vcpkg_package_link_transition = transition(
 )
 
 def _vcpkg_package_link_impl(ctx):
-    return ctx.attr.package[0][DefaultInfo]
+    package = ctx.attr.package[0]
+
+    # print(package[VcpkgPackageInfo].output_dir.path)
+    # print(package[VcpkgPackageInfo].output_dir.is_directory)
+    return package[DefaultInfo]
 
 vcpkg_package_link = rule(
     implementation = _vcpkg_package_link_impl,
