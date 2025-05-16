@@ -2,12 +2,6 @@ load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load(":platform_utils.bzl", "vcpkg_platform_triplet")
 
-cc_binary(
-    name = "prepare_install_dir",
-    srcs = ["prepare_install_dir.cc"],
-    visibility = ["//visibility:public"],
-)
-
 config_setting(
     name = "arm64_osx",
     constraint_values = [
@@ -21,5 +15,17 @@ vcpkg_platform_triplet(
     triplet = select({
         ":arm64_osx": "arm64-osx",
     }),
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "call_vcpkg_wrapper",
+    srcs = ["call_vcpkg_wrapper.sh"],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "prepare_install_dir",
+    srcs = ["prepare_install_dir.cc"],
     visibility = ["//visibility:public"],
 )

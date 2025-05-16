@@ -5,7 +5,6 @@ VcpgInfo = provider(
         "vcpkg_manifest",
         "vcpkg_files",
         "cmake_files",
-        # "default_install_files",
     ],
 )
 
@@ -20,9 +19,6 @@ def _vcpkg_toolchain_impl(ctx):
             cmake_files = DefaultInfo(
                 files = depset(ctx.files.cmake_files),
             ),
-            # default_install_files = DefaultInfo(
-            #     files = depset(ctx.files.default_install_files),
-            # ),
         ),
     )
 
@@ -39,6 +35,5 @@ vcpkg_toolchain = rule(
         ),
         "vcpkg_files": attr.label_list(allow_files = True),
         "cmake_files": attr.label_list(allow_files = True),
-        # "default_install_files": attr.label_list(allow_files = True),
     },
 )

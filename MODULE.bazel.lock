@@ -146,7 +146,7 @@
   "moduleExtensions": {
     "//vcpkg:extensions.bzl%vcpkg": {
       "general": {
-        "bzlTransitiveDigest": "P/1K14y4FVgQZd+4/0S3JjcJe8oQ9stQ2NerDg2+L6g=",
+        "bzlTransitiveDigest": "U+habjR5UDxVArqvVxG44+13AVK3WJnxV4Tyhjbb94k=",
         "usagesDigest": "PqbLqo3jeNCqcSdCdXI5trlYJm26NFDscYy1CWlVpWw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -175,13 +175,13 @@
             }
           },
           "vcpkg_vcpkg-cmake": {
-            "repoRuleId": "@@//vcpkg:vcpkg.bzl%vcpkg_package",
+            "repoRuleId": "@@//vcpkg/private:vcpkg_package.bzl%vcpkg_package",
             "attributes": {
               "package": "vcpkg-cmake"
             }
           },
           "vcpkg_fmt": {
-            "repoRuleId": "@@//vcpkg:vcpkg.bzl%vcpkg_package",
+            "repoRuleId": "@@//vcpkg/private:vcpkg_package.bzl%vcpkg_package",
             "attributes": {
               "package": "fmt"
             }

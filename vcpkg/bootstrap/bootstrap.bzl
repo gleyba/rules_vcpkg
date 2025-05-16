@@ -24,16 +24,13 @@ vcpkg_toolchain(
     name = "vcpkg",
     vcpkg_tool = "vcpkg_wrapper.sh",
     vcpkg_manifest = ":vcpkg.json",
-    # default_install_files = [
-    #     "//install",
-    # ],
     vcpkg_files = [
         "//vcpkg:vcpkg",
         "//vcpkg:LICENSE.txt",
         "//vcpkg:.vcpkg-root",
         "//vcpkg/scripts",
         "//vcpkg/triplets",
-        "//vcpkg/downloads",
+        "//vcpkg/downloads:tools",
     ],
     cmake_files = [
         "@cmake//:cmake_data",
@@ -55,7 +52,7 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
-{packages}
+{packages}\
 """
 
 _VCPKG_PACKAGE_TPL = """\
@@ -63,6 +60,7 @@ vcpkg_build(
     name = "{package}",
     port = "@vcpkg//vcpkg/ports:{package}",
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
+    downloads = "@vcpkg//vcpkg/downloads:{package}",
     deps = [{deps}],
     visibility = ["//visibility:public"],
 )
@@ -79,18 +77,20 @@ exports_files(
 )
 """
 
-# _INSTALL_BAZEL = """\
-# filegroup(
-#     name = "install",
-#     srcs = glob(["**/*"]),
-#     visibility = ["//visibility:public"],
-# )
-# """
-
-_DOWNLOADS_BAZEL = """\
+_DOWNLOADS_BAZEL_TPL = """\
 filegroup(
-    name = "downloads",
-    srcs = glob(["**/*"]),
+    name = "tools",
+    srcs = glob(["tools/**/*"]),
+    visibility = ["//visibility:public"],
+)
+
+{packages_downloads}\
+"""
+
+_PACKAGE_DOWNLOAD_TPL = """\
+filegroup(
+    name = "{package_name}",
+    srcs = [{downloads}],
     visibility = ["//visibility:public"],
 )
 """
@@ -119,6 +119,23 @@ filegroup(
 )
 """
 
+def _extract_downloads(rctx, output):
+    result = {}
+    for buildtree in rctx.path("%s/vcpkg/buildtrees" % output).readdir():
+        downloads = []
+        for buildtree_inner in buildtree.readdir():
+            if buildtree_inner.basename.endswith(".log"):
+                if buildtree_inner.basename.startswith("stdout"):
+                    for line in rctx.read(buildtree_inner).split("\n"):
+                        if line.startswith("Downloading"):
+                            downloads.append(line.split(" -> ")[1])
+
+                rctx.delete(buildtree_inner)
+
+        result[buildtree.basename] = downloads
+
+    return result
+
 def _bootstrap(rctx, output, release, sha256, packages):
     pu = platform_utils(rctx)
 
@@ -141,19 +158,6 @@ def _bootstrap(rctx, output, release, sha256, packages):
         integrity = "sha512-%s" % base64_encode_hexstr(tool_meta[pu.downloads.sha_key]),
         executable = True,
     )
-
-    # rctx.file("registries/BUILD.bazel", "")
-    # rctx.file("overlay_ports/BUILD.bazel", "")
-
-    # exec_check(
-    #     rctx,
-    #     "vcpkg bootstrap",
-    #     [
-    #         "vcpkg/vcpkg",
-    #         "bootstrap-standalone"
-    #     ] + vcpkg_args,
-    #     vcpkg_env,
-    # )
 
     rctx.file(
         "vcpkg.json",
@@ -188,7 +192,7 @@ def _bootstrap(rctx, output, release, sha256, packages):
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
                 deps = "" if not deps else "\n" + "\n".join([
-                    "       \":{dep}\",".format(dep = dep)
+                    "       \":%s\"," % dep
                     for dep in deps
                 ]) + "\n    ",
             )
@@ -198,8 +202,18 @@ def _bootstrap(rctx, output, release, sha256, packages):
 
     rctx.file("vcpkg/BUILD.bazel", _VCPKG_BAZEL)
 
-    # rctx.file("install/BUILD.bazel", _INSTALL_BAZEL)
-    rctx.file("vcpkg/downloads/BUILD.bazel", _DOWNLOADS_BAZEL)
+    rctx.file("vcpkg/downloads/BUILD.bazel", _DOWNLOADS_BAZEL_TPL.format(
+        packages_downloads = "\n".join([
+            _PACKAGE_DOWNLOAD_TPL.format(
+                package_name = package_name,
+                downloads = "" if not downloads else "\n" + "\n".join([
+                    "       \"%s\"," % download
+                    for download in downloads
+                ]) + "\n    ",
+            )
+            for package_name, downloads in _extract_downloads(rctx, output).items()
+        ]),
+    ))
     rctx.file("vcpkg/scripts/BUILD.bazel", _SCRIPTS_BAZEL)
     rctx.file("vcpkg/triplets/BUILD.bazel", _TRIPLETS_BAZEL)
     rctx.file("vcpkg/ports/BUILD.bazel", "\n".join([
