@@ -17,7 +17,7 @@ exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
 _BUILD_BAZEL_TPL = """\
-load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
+load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build", "vcpkg_lib")
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
 
 vcpkg_toolchain(
@@ -57,11 +57,18 @@ toolchain(
 
 _VCPKG_PACKAGE_TPL = """\
 vcpkg_build(
-    name = "{package}",
+    name = "{package}_build",
+    package_name = "{package}",
     port = "@vcpkg//vcpkg/ports:{package}",
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
     downloads = "@vcpkg//vcpkg/downloads:{package}",
-    deps = [{deps}],
+    deps = [{build_deps}],
+)
+
+vcpkg_lib(
+    name = "{package}",
+    build = ":{package}_build",
+    deps = [{lib_deps}],
     visibility = ["//visibility:public"],
 )
 """
@@ -136,6 +143,17 @@ def _extract_downloads(rctx, output):
 
     return result
 
+def _format_inner_list(deps, pattern):
+    if not deps:
+        return ""
+
+    result = [
+        "       \"%s\"," % (pattern % dep)
+        for dep in deps
+    ]
+
+    return "\n" + "\n".join(result) + "\n    "
+
 def _bootstrap(rctx, output, release, sha256, packages):
     pu = platform_utils(rctx)
 
@@ -191,10 +209,8 @@ def _bootstrap(rctx, output, release, sha256, packages):
         packages = "\n".join([
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
-                deps = "" if not deps else "\n" + "\n".join([
-                    "       \":%s\"," % dep
-                    for dep in deps
-                ]) + "\n    ",
+                build_deps = _format_inner_list(deps, ":%s_build"),
+                lib_deps = _format_inner_list(deps, ":%s_lib"),
             )
             for package, deps in depend_info.items()
         ]),
@@ -206,10 +222,7 @@ def _bootstrap(rctx, output, release, sha256, packages):
         packages_downloads = "\n".join([
             _PACKAGE_DOWNLOAD_TPL.format(
                 package_name = package_name,
-                downloads = "" if not downloads else "\n" + "\n".join([
-                    "       \"%s\"," % download
-                    for download in downloads
-                ]) + "\n    ",
+                downloads = _format_inner_list(downloads, "%s"),
             )
             for package_name, downloads in _extract_downloads(rctx, output).items()
         ]),

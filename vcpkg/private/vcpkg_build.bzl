@@ -76,7 +76,7 @@ def _vcpkg_build_impl(ctx):
     vcpkg_root = "%s/vcpkg" % paths.dirname(vcpkg_info.vcpkg_tool.path)
 
     package_output_dir_path = "{name}/packages/{name}_{triplet}".format(
-        name = ctx.attr.name,
+        name = ctx.attr.package_name,
         triplet = ctx.attr._tripplet[VcpkgPlatformTrippletProvider].triplet,
     )
 
@@ -91,7 +91,7 @@ def _vcpkg_build_impl(ctx):
     args.add("--")
 
     args.add("build")
-    args.add(ctx.attr.name)
+    args.add(ctx.attr.package_name)
     args.add("--vcpkg-root=%s" % vcpkg_root)
     args.add("--x-buildtrees-root=%s/buildtrees" % vcpkg_root)
     args.add("--downloads-root=%s/downloads" % vcpkg_root)
@@ -127,7 +127,7 @@ def _vcpkg_build_impl(ctx):
             package_output_dir,
         ])),
         VcpkgBuiltPackageInfo(
-            name = ctx.attr.name,
+            name = ctx.attr.package_name,
             port = ctx.files.port,
             output = package_output_dir,
         ),
@@ -137,6 +137,7 @@ def _vcpkg_build_impl(ctx):
 vcpkg_build = rule(
     implementation = _vcpkg_build_impl,
     attrs = {
+        "package_name": attr.string(mandatory = True),
         "port": attr.label(allow_files = True),
         "buildtree": attr.label(allow_files = True),
         "downloads": attr.label(allow_files = True),
@@ -158,7 +159,7 @@ vcpkg_build = rule(
             default = "@rules_vcpkg//vcpkg/vcpkg_utils:prepare_install_dir",
             executable = True,
             cfg = "exec",
-            doc = "Vcpkg install directory",
+            doc = "Tool to prepare vcpkg install directory structure",
         ),
     },
     toolchains = [

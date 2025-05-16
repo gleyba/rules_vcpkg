@@ -1,5 +1,4 @@
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load(":platform_utils.bzl", "vcpkg_platform_triplet")
 
 config_setting(
@@ -8,6 +7,14 @@ config_setting(
         "@platforms//cpu:arm64",
         "@platforms//os:osx",
     ],
+)
+
+config_setting(
+    name = "is_release_build",
+    values = {
+        "compilation_mode": "opt",
+    },
+    visibility = ["//visibility:public"],
 )
 
 vcpkg_platform_triplet(
@@ -24,8 +31,21 @@ sh_binary(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "package_ctrl",
+    srcs = ["package_ctrl.cpp"],
+    hdrs = ["package_ctrl.hpp"],
+)
+
 cc_binary(
     name = "prepare_install_dir",
-    srcs = ["prepare_install_dir.cc"],
+    srcs = ["prepare_install_dir.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [":package_ctrl"],
+)
+
+cc_binary(
+    name = "extract_package_outputs",
+    srcs = ["extract_package_outputs.cpp"],
     visibility = ["//visibility:public"],
 )

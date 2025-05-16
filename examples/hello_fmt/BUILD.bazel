@@ -1,0 +1,5 @@
+cc_binary(
+    name = "hello_fmt",
+    srcs = ["hello_fmt.cpp"],
+    deps = ["@vcpkg_fmt//:fmt"],
+)

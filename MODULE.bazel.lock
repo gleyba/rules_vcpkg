@@ -144,68 +144,6 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
-    "//vcpkg:extensions.bzl%vcpkg": {
-      "general": {
-        "bzlTransitiveDigest": "U+habjR5UDxVArqvVxG44+13AVK3WJnxV4Tyhjbb94k=",
-        "usagesDigest": "PqbLqo3jeNCqcSdCdXI5trlYJm26NFDscYy1CWlVpWw=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "cmake": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "urls": [
-                "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz"
-              ],
-              "sha256": "4c53ba41092617d1be2205dbc10bb5873a4c5ef5e9e399fc927ffbe78668a6d3",
-              "strip_prefix": "cmake-4.0.2-macos-universal/CMake.app/Contents",
-              "build_file_content": "filegroup(\n    name = \"cmake_bin\",\n    srcs = [\"bin/cmkae\"],\n    visibility = [\"//visibility:public\"],\n)\n\nfilegroup(\n    name = \"cmake_data\",\n    srcs = glob(\n        [\n            \"**\",\n        ],\n        exclude = [\n            \"WORKSPACE\",\n            \"WORKSPACE.bazel\",\n            \"BUILD\",\n            \"BUILD.bazel\",\n            \"**/* *\",\n        ],\n    ),\n    visibility = [\"//visibility:public\"],\n)\n"
-            }
-          },
-          "vcpkg": {
-            "repoRuleId": "@@//vcpkg/bootstrap:bootstrap.bzl%bootstrap",
-            "attributes": {
-              "release": "2025.04.09",
-              "sha256": "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
-              "packages": [
-                "vcpkg-cmake",
-                "fmt"
-              ]
-            }
-          },
-          "vcpkg_vcpkg-cmake": {
-            "repoRuleId": "@@//vcpkg/private:vcpkg_package.bzl%vcpkg_package",
-            "attributes": {
-              "package": "vcpkg-cmake"
-            }
-          },
-          "vcpkg_fmt": {
-            "repoRuleId": "@@//vcpkg/private:vcpkg_package.bzl%vcpkg_package",
-            "attributes": {
-              "package": "fmt"
-            }
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "",
-            "aspect_bazel_lib",
-            "aspect_bazel_lib+"
-          ],
-          [
-            "",
-            "bazel_skylib",
-            "bazel_skylib+"
-          ],
-          [
-            "",
-            "bazel_tools",
-            "bazel_tools"
-          ]
-        ]
-      }
-    },
     "@@buildifier_prebuilt+//:defs.bzl%buildifier_prebuilt_deps_extension": {
       "general": {
         "bzlTransitiveDigest": "YG9b6AzHuIdOM5begt59eoHL6Xy3A/8U8VYJqdUJVEo=",
