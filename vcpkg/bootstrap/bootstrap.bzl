@@ -6,7 +6,7 @@ load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 _VCPKG_WRAPPER = """\
 #!/usr/bin/env bash
 
-set -eux
+set -eu
 
 export HOME=/tmp/home
 export PATH="${PWD}/${CMAKE_BIN}:/usr/bin:/bin"
@@ -210,7 +210,7 @@ def _bootstrap(rctx, output, release, sha256, packages):
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
                 build_deps = _format_inner_list(deps, ":%s_build"),
-                lib_deps = _format_inner_list(deps, ":%s_lib"),
+                lib_deps = _format_inner_list(deps, ":%s"),
             )
             for package, deps in depend_info.items()
         ]),

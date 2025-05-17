@@ -9,8 +9,8 @@ def _extract_package_outputs_impl(ctx):
     args.add(package_info.output.path)
     args.add(output_dir.path)
     args.add(ctx.attr.dir_prefix)
-    if ctx.attr.extension:
-        args.add(ctx.attr.extension)
+    args.add(ctx.attr.collect_type)
+    args.add(ctx.file._empty_lib)
 
     ctx.actions.run(
         tools = [
@@ -18,6 +18,7 @@ def _extract_package_outputs_impl(ctx):
         ],
         inputs = [
             package_info.output,
+            ctx.file._empty_lib,
         ],
         outputs = [
             output_dir,
@@ -40,8 +41,8 @@ _extract_package_outputs = rule(
             mandatory = True,
             doc = "Directory prefix to search files in",
         ),
-        "extension": attr.string(
-            mandatory = False,
+        "collect_type": attr.string(
+            mandatory = True,
             doc = "Files extension to search for",
         ),
         "_extract_package_outputs": attr.label(
@@ -49,6 +50,11 @@ _extract_package_outputs = rule(
             executable = True,
             cfg = "exec",
             doc = "Tool to prepare vcpkg install directory structure",
+        ),
+        "_empty_lib": attr.label(
+            default = "@rules_vcpkg//vcpkg/vcpkg_utils:_",
+            allow_single_file = True,
+            doc = "Just an empty lib stub",
         ),
     },
 )
@@ -58,12 +64,13 @@ def vcpkg_lib(name, build, deps, **kwargs):
         name = "%s_headers" % name,
         build = build,
         dir_prefix = "include",
+        collect_type = "headers",
     )
     _extract_package_outputs(
         name = "%s_release_lib" % name,
         build = build,
         dir_prefix = "lib",
-        extension = ".a",
+        collect_type = "libs",
     )
     cc_import(
         name = "%s_release_import" % name,
@@ -72,7 +79,10 @@ def vcpkg_lib(name, build, deps, **kwargs):
     )
     cc_library(
         name = "%s_release" % name,
-        deps = [":%s_release_import" % name],
+        deps = [":%s_release_import" % name] + [
+            "%s_release" % dep
+            for dep in deps
+        ],
         includes = ["%s_headers" % name],
         **kwargs
     )
@@ -80,7 +90,7 @@ def vcpkg_lib(name, build, deps, **kwargs):
         name = "%s_debug_lib" % name,
         build = build,
         dir_prefix = "debug/lib",
-        extension = ".a",
+        collect_type = "libs",
     )
     cc_import(
         name = "%s_debug_import" % name,
@@ -89,7 +99,10 @@ def vcpkg_lib(name, build, deps, **kwargs):
     )
     cc_library(
         name = "%s_debug" % name,
-        deps = [":%s_debug_import" % name],
+        deps = [":%s_debug_import" % name] + [
+            "%s_debug" % dep
+            for dep in deps
+        ],
         includes = ["%s_headers" % name],
         **kwargs
     )

@@ -1,0 +1,18 @@
+module(name = "hello_fmt")
+
+bazel_dep(name = "rules_vcpkg", version = "0.0.0")
+local_path_override(
+    module_name = "rules_vcpkg",
+    path = "../..",
+)
+
+vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
+vcpkg.bootstrap(
+    release = "2025.04.09",
+    sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
+)
+vcpkg.install(package = "boost-asio")
+use_repo(vcpkg, "vcpkg")
+use_repo(vcpkg, "vcpkg_boost-asio")
+
+register_toolchains("@vcpkg//:vcpkg_toolchain")

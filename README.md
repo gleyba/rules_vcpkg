@@ -1,15 +1,15 @@
 # VCPKG rules for Bazel
 
-This is a very draft of how [vcpkg](https://vcpkg.io/en/) dependency manager can by integrated to [Bazel](https://bazel.build/) build system.
+This is a very draft of how [vcpkg](https://vcpkg.io/en/) dependency manager can be integrated to [Bazel](https://bazel.build/) build system.
 
-Vcpkg is a well curated set of C/C++ libraries with build configurations to build from source.
+Vcpkg is the well curated list of C/C++ libraries with predefined configurations to build from source.
 It is easy to integrate if you use Cmake, but Bazel is a separate story.
 
 You can `cc_import` libraries produced by vcpkg, but you have to manage two different systems in conjunction with each other.
 
-The main goal of `rules_vcpkg` is to wrap `vcpkg` as a hermetic toolchain for Bazel, and provide an easy way to declare package with Bazel's [bzlmod](https://bazel.build/versions/6.0.0/build/bzlmod) module system.
+The main goal of `rules_vcpkg` is to wrap `vcpkg` as a hermetic toolchain for Bazel, and provide an easy way to declare package with Bazel's [bzlmod](https://bazel.build/external/overview) module system.
 
-Initial vcpkg bootstrap wiht all declared packages implemented as a [repository rule](https://bazel.build/external/repo). But each library build process is a separate execution phase [action](https://bazel.build/extending/rules#actions) wrapped in custom [rule](https://bazel.build/extending/rules). 
+Initial vcpkg bootstrap with all declared packages implemented as a [repository rule](https://bazel.build/external/repo). But each library build process is a separate execution phase [action](https://bazel.build/extending/rules#actions) wrapped in custom [rule](https://bazel.build/extending/rules). 
 
 Such a setup must be compatible with Bazel's remote caching and remote execution.
 
@@ -82,7 +82,14 @@ Hello FMT!
 
 ## Upcoming work
 
-- [ ] Test more sophisticated packages with complex transitive dependencies structure
+- [ ] Test more sophisticated packages with complex transitive dependencies structure:
+    - [x] Add [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html) example
+    - [ ] Add [Facebook Folly](https://github.com/facebook/folly) example
+    - [ ] Add [DuckDB](https://duckdb.org) example
+    - [ ] Add [QT](https://www.qt.io/) example
+    - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
+    - [ ] Add [Google Cloud Cpp](https://github.com/googleapis/google-cloud-cpp) example
+    - [ ] Add [Azure SDK for Cpp](https://github.com/Azure/azure-sdk-for-cpp/tree/main) example
 - [ ] Support other platforms besides Mac OS X aarh64, setup CI checks
 - [ ] Support hermetic C/C++ Bazel toolchains by generating custom [Overlay Triplet](https://learn.microsoft.com/en-us/vcpkg/users/examples/overlay-triplets-linux-dynamic) with [VCPKG_CHAINLOAD_TOOLCHAIN_FILE](https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_chainload_toolchain_file) reference inside
 - [ ] Announce this work in Bazel slack

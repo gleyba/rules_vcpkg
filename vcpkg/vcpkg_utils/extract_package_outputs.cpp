@@ -1,5 +1,6 @@
 #include <string>
 #include <optional>
+#include <fstream>
 #include <filesystem>
 #include <algorithm>
 
@@ -16,12 +17,21 @@ int main(int argc, char ** argv) {
     fs::path package_output_dir { argv[1] };
     fs::path output_dir { argv[2] };
     fs::path scan_dir = package_output_dir / argv[3];
+    std::string collect_type { argv[4] };
+    fs::path empty_lib { argv[5] };
     std::optional<std::string> extension;
-    if (argc == 5) {
-        extension = argv[4];
+    if (collect_type == "libs") {
+        extension = ".a";
     }
 
     fs::create_directories(output_dir);
+
+    if (!fs::exists(scan_dir)) {
+        if (collect_type == "libs") {
+            fs::copy_file(empty_lib, output_dir / "lib_.a");
+        }
+        return 0;
+    }
 
     for (auto const& dir_entry : fs::recursive_directory_iterator{scan_dir}) {
         if (dir_entry.is_directory()) {

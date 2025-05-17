@@ -49,3 +49,11 @@ cc_binary(
     srcs = ["extract_package_outputs.cpp"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "_",
+    srcs = ["empty.cpp"],
+    cxxopts = ["-Wno-unused-function"],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
