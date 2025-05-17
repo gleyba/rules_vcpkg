@@ -11,8 +11,8 @@ vcpkg.bootstrap(
     release = "2025.04.09",
     sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
 )
-vcpkg.install(package = "fmt")
+vcpkg.install(package = "openssl")
 use_repo(vcpkg, "vcpkg")
-use_repo(vcpkg, "vcpkg_fmt")
+use_repo(vcpkg, "vcpkg_openssl")
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")
