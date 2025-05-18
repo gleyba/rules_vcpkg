@@ -11,6 +11,16 @@
 
 namespace fs = std::filesystem;
 
+std::vector<package_control_t> read_packages(const fs::path& packages_outputs_list_path) {
+    std::vector<package_control_t> packages_ctrls;
+    std::ifstream list_ifs(packages_outputs_list_path);
+    std::string line;
+    while (std::getline(list_ifs, line)) {
+        packages_ctrls.push_back(read_package_control(line));
+    }
+    return packages_ctrls;
+}
+
 void write_manifest(const fs::path& vcpkg_meta_dir, const fs::path& manifest_path) {
     std::ofstream manifest_info(vcpkg_meta_dir / "manifest-info.json");
     manifest_info << "{\n" 
@@ -46,11 +56,9 @@ void write_listing(const fs::path& vcpkg_info_dir, const package_control_t& ctrl
 int main(int argc, char ** argv) {
     fs::path install_dir { argv[1] };
     fs::path manifest_path { argv[2] };
+    fs::path packages_outputs_list_path { argv[3] };
 
-    std::vector<package_control_t> packages_ctrls;
-    for (std::size_t i = 3; i < argc; ++i) {
-        packages_ctrls.push_back(read_package_control({argv[i]}));
-    }
+    auto packages_ctrls = read_packages(packages_outputs_list_path);
 
     fs::path vcpkg_meta_dir = install_dir / "vcpkg"; 
     fs::create_directories(vcpkg_meta_dir);

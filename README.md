@@ -84,7 +84,7 @@ Hello FMT!
 
 - [ ] Test more sophisticated packages with complex transitive dependencies structure:
     - [x] Add [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html) example
-    - [ ] Add [Facebook Folly](https://github.com/facebook/folly) example
+    - [x] Add [Facebook Folly](https://github.com/facebook/folly) example
     - [ ] Add [DuckDB](https://duckdb.org) example
     - [ ] Add [QT](https://www.qt.io/) example
     - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example

@@ -53,6 +53,17 @@ def _vcpkg_build_impl(ctx):
         dep_info.output
         for dep_info in deps_list
     ]
+
+    packages_list_file = ctx.actions.declare_file("%s_packages.list" % ctx.attr.name)
+
+    ctx.actions.write(
+        output = packages_list_file,
+        content = "\n".join(sorted([
+            deps_output.path
+            for deps_output in deps_outputs
+        ])),
+    )
+
     deps_ports = [
         dep_info.port
         for dep_info in deps_list
@@ -60,6 +71,7 @@ def _vcpkg_build_impl(ctx):
 
     inputs = [
         vcpkg_info.vcpkg_manifest,
+        packages_list_file,
     ] + [
         item
         for sublist in [
@@ -82,26 +94,31 @@ def _vcpkg_build_impl(ctx):
 
     package_output_dir = ctx.actions.declare_directory(package_output_dir_path)
 
-    args = ctx.actions.args()
-    args.add(install_dir.path)
-    args.add(vcpkg_info.vcpkg_manifest)
-    for dep_output in deps_outputs:
-        args.add(dep_output.path)
-
-    args.add("--")
-
-    args.add("build")
-    args.add(ctx.attr.package_name)
-    args.add("--vcpkg-root=%s" % vcpkg_root)
-    args.add("--x-buildtrees-root=%s/buildtrees" % vcpkg_root)
-    args.add("--downloads-root=%s/downloads" % vcpkg_root)
-    args.add("--x-install-root=%s" % install_dir.path)
-    args.add("--x-packages-root=%s" % paths.dirname(package_output_dir.path))
+    call_vcpkg_wrapper = ctx.actions.declare_file("call_vcpkg_%s.sh" % ctx.attr.name)
+    ctx.actions.expand_template(
+        template = ctx.file._call_vcpkg_wrapper_tpl,
+        output = call_vcpkg_wrapper,
+        is_executable = True,
+        substitutions = {
+            "__cmake_bin__": cmake_bin,
+            "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
+            "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
+            "__install_dir_path__": install_dir.path,
+            "__vcpkg_manifest_path__": vcpkg_info.vcpkg_manifest.path,
+            "__packages_list_file__": packages_list_file.path,
+            "__package_name__": ctx.attr.package_name,
+            "__vcpkg_root__": vcpkg_root,
+            "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
+            "__downloads_root__": "%s/downloads" % vcpkg_root,
+            "__install_root__": install_dir.path,
+            "__packages_root__": paths.dirname(package_output_dir.path),
+        },
+    )
 
     ctx.actions.run(
         tools = [
             vcpkg_info.vcpkg_tool,
-            ctx.executable._call_vcpkg_wrapper,
+            call_vcpkg_wrapper,
             ctx.executable._prepare_install_dir,
         ],
         inputs = inputs,
@@ -109,13 +126,8 @@ def _vcpkg_build_impl(ctx):
             install_dir,
             package_output_dir,
         ],
-        executable = ctx.executable._call_vcpkg_wrapper,
-        arguments = [args],
+        executable = call_vcpkg_wrapper,
         env = {
-            "CMAKE_BIN": cmake_bin,
-            "VCPKG_BIN": vcpkg_info.vcpkg_tool.path,
-            "WORK_DIR": paths.dirname(vcpkg_info.vcpkg_manifest.path),
-            "PREPARE_INSTALL_DIR_BIN": ctx.executable._prepare_install_dir.path,
             "VCPKG_MAX_CONCURRENCY": "1",
             "VCPKG_DEBUG": "1",
         },
@@ -149,11 +161,10 @@ vcpkg_build = rule(
             default = "@rules_vcpkg//vcpkg/vcpkg_utils:vcpkg_triplet",
             doc = "Vcpkg triplet",
         ),
-        "_call_vcpkg_wrapper": attr.label(
-            default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper",
-            executable = True,
-            cfg = "exec",
-            doc = "Vcpkg wrapper script",
+        "_call_vcpkg_wrapper_tpl": attr.label(
+            default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
+            allow_single_file = True,
+            doc = "Vcpkg wrapper script template",
         ),
         "_prepare_install_dir": attr.label(
             default = "@rules_vcpkg//vcpkg/vcpkg_utils:prepare_install_dir",

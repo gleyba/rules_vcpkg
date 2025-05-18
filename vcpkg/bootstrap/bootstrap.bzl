@@ -8,9 +8,6 @@ _VCPKG_WRAPPER = """\
 
 set -eu
 
-export HOME=/tmp/home
-export PATH="${PWD}/${CMAKE_BIN}:/usr/bin:/bin"
-
 SCRIPT_DIR=$(dirname "$0")
 
 exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
@@ -138,6 +135,10 @@ def _extract_downloads(rctx, output):
                             downloads.append(line.split(" -> ")[1])
 
                 rctx.delete(buildtree_inner)
+            elif buildtree_inner.basename == "src":
+                for src_dir in rctx.path(buildtree_inner).readdir():
+                    if src_dir.basename.endswith(".clean"):
+                        rctx.rename(src_dir, str(src_dir)[:-6])
 
         result[buildtree.basename] = downloads
 

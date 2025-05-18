@@ -35,8 +35,18 @@ package_control_t read_package_control(const fs::path& package_output_dir) {
 
     std::string line;
     while (std::getline(control_ifs, line)) {
-        if (!name) {
-            name = parse_if_needed_line(line, "Package: ");
+        if (line.empty()) {
+            continue;
+        }
+
+        if (line.find("Package: ") == 0) {
+            if (name) {
+                // Probably parsing feature now, need to add installed mark
+                status_data.push_back("Status: install ok installed");  
+                status_data.push_back("");  
+            } else {
+                name = parse_if_needed_line(line, "Package: ");
+            }
         }
 
         if (!version) {

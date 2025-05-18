@@ -25,9 +25,9 @@ vcpkg_platform_triplet(
     visibility = ["//visibility:public"],
 )
 
-sh_binary(
-    name = "call_vcpkg_wrapper",
-    srcs = ["call_vcpkg_wrapper.sh"],
+filegroup(
+    name = "call_vcpkg_wrapper_tpl",
+    srcs = ["call_vcpkg_wrapper.sh.tpl"],
     visibility = ["//visibility:public"],
 )
 
