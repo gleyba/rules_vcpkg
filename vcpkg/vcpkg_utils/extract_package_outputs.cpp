@@ -33,7 +33,7 @@ int main(int argc, char ** argv) {
         return 0;
     }
 
-    for (auto const& dir_entry : fs::recursive_directory_iterator{scan_dir}) {
+    for (const auto& dir_entry : fs::recursive_directory_iterator{scan_dir}) {
         if (dir_entry.is_directory()) {
             continue;
         }

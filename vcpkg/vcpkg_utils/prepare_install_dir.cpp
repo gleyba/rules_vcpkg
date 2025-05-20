@@ -53,13 +53,12 @@ void write_listing(const fs::path& vcpkg_info_dir, const package_control_t& ctrl
     listing_ofs.close();
 }
 
-int main(int argc, char ** argv) {
-    fs::path install_dir { argv[1] };
-    fs::path manifest_path { argv[2] };
-    fs::path packages_outputs_list_path { argv[3] };
-
+void prepare_install_dir(
+    const fs::path& install_dir,
+    const fs::path& manifest_path,
+    const fs::path& packages_outputs_list_path
+) {
     auto packages_ctrls = read_packages(packages_outputs_list_path);
-
     fs::path vcpkg_meta_dir = install_dir / "vcpkg"; 
     fs::create_directories(vcpkg_meta_dir);
     write_manifest(vcpkg_meta_dir, manifest_path);
@@ -70,7 +69,7 @@ int main(int argc, char ** argv) {
 
     for (const auto& ctrl: packages_ctrls) {
         std::vector<std::string> listing;
-        for (auto const& dir_entry : fs::recursive_directory_iterator{ctrl.output_dir}) {
+        for (const auto& dir_entry : fs::recursive_directory_iterator{ctrl.output_dir}) {
             auto entry_path = dir_entry.path();
 
             if (entry_path.filename() == "BUILD_INFO") {
@@ -96,6 +95,54 @@ int main(int argc, char ** argv) {
         
         write_listing(vcpkg_info_dir, ctrl, listing);
     }
+}
+
+void prepare_build_root(const fs::path& buildtrees_root) {
+    for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
+        fs::path src_path = package_buildtree_entry.path() / "src";
+        
+        if (!fs::exists(src_path)) {
+            continue;
+        }
+
+        for (const auto& src_entry: fs::directory_iterator {src_path}) {
+            if (src_entry.path().extension() != ".clean") {
+                continue;
+            }
+
+            fs::path src = src_entry.path();
+            fs::path dst =  src;
+            dst.replace_extension("");
+            fs::create_directories(dst);
+
+            for (const auto& buildtree_entry: fs::recursive_directory_iterator {src}) {
+                auto buildtree_entry_path = buildtree_entry.path();
+                auto relative_path = buildtree_entry_path.lexically_relative(src);
+                auto dst_builtree_path = dst / relative_path;
+                if (buildtree_entry.is_directory()) {
+                    fs::create_directories(dst_builtree_path);
+                } else {
+                    fs::copy_file(buildtree_entry_path, dst_builtree_path);
+                }
+            }
+        }
+
+    }
+}
+
+int main(int argc, char ** argv) {
+    fs::path install_dir { argv[1] };
+    fs::path manifest_path { argv[2] };
+    fs::path packages_outputs_list_path { argv[3] };
+
+    prepare_install_dir(
+        install_dir, 
+        manifest_path, 
+        packages_outputs_list_path
+    );
+
+    fs::path buildtrees_root { argv[4] };
+    prepare_build_root(buildtrees_root);
 
     return 0;
 }

@@ -135,10 +135,6 @@ def _extract_downloads(rctx, output):
                             downloads.append(line.split(" -> ")[1])
 
                 rctx.delete(buildtree_inner)
-            elif buildtree_inner.basename == "src":
-                for src_dir in rctx.path(buildtree_inner).readdir():
-                    if src_dir.basename.endswith(".clean"):
-                        rctx.rename(src_dir, str(src_dir)[:-6])
 
         result[buildtree.basename] = downloads
 
@@ -198,6 +194,8 @@ def _bootstrap(rctx, output, release, sha256, packages):
         output,
     )
 
+    downloads_per_package = _extract_downloads(rctx, output)
+
     depend_info = collect_depend_info(
         rctx,
         output,
@@ -225,7 +223,7 @@ def _bootstrap(rctx, output, release, sha256, packages):
                 package_name = package_name,
                 downloads = _format_inner_list(downloads, "%s"),
             )
-            for package_name, downloads in _extract_downloads(rctx, output).items()
+            for package_name, downloads in downloads_per_package.items()
         ]),
     ))
     rctx.file("vcpkg/scripts/BUILD.bazel", _SCRIPTS_BAZEL)
