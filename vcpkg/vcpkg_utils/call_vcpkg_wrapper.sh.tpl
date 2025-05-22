@@ -10,7 +10,6 @@ prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 
 "${prepare_install_dir_bin}" \
   __install_dir_path__ \
-  __vcpkg_manifest_path__ \
   __packages_list_file__ \
   __buildtrees_root__
 

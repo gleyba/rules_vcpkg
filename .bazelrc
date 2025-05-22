@@ -8,3 +8,12 @@ build --nolegacy_external_runfiles
 
 test --incompatible_exclusive_test_sandboxed
 test --build_tests_only
+
+
+build:buildbuddy --bes_results_url=https://app.buildbuddy.io/invocation/
+build:buildbuddy --bes_backend=grpcs://remote.buildbuddy.io
+build:buildbuddy --remote_cache=grpcs://remote.buildbuddy.io
+build:buildbuddy --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
+build:buildbuddy --remote_timeout=10m
+
+import %workspace%/.user.bazelrc

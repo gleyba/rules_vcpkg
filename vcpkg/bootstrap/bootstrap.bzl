@@ -32,6 +32,7 @@ vcpkg_toolchain(
     cmake_files = [
         "@cmake//:cmake_data",
     ],
+    host_cpu_count = {host_cpu_count},
 )
 
 toolchain(
@@ -60,13 +61,14 @@ vcpkg_build(
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
     downloads = "@vcpkg//vcpkg/downloads:{package}",
     deps = [{build_deps}],
+    cpus = "{cpus}",
 )
 
 vcpkg_lib(
     name = "{package}",
     build = ":{package}_build",
     deps = [{lib_deps}],
-    visibility = ["//visibility:public"],
+    visibility = ["@vcpkg_{package}//:__subpackages__"],
 )
 """
 
@@ -130,9 +132,19 @@ def _extract_downloads(rctx, output):
         for buildtree_inner in buildtree.readdir():
             if buildtree_inner.basename.endswith(".log"):
                 if buildtree_inner.basename.startswith("stdout"):
-                    for line in rctx.read(buildtree_inner).split("\n"):
-                        if line.startswith("Downloading"):
-                            downloads.append(line.split(" -> ")[1])
+                    buildtree_log_content = rctx.read(buildtree_inner)
+                    for line in buildtree_log_content.split("\n"):
+                        if line.startswith("Successfully downloaded "):
+                            downloads.append(line[24:].strip())
+                            # download_parts = line.split("->")
+                            # if len(download_parts) == 2:
+                            #     downloads.append(download_parts[1].strip())
+                            # else:
+                            #     fail("Can't parse downloads for package: %s parts: %s\n%s" % (
+                            #         buildtree.basename,
+                            #         download_parts,
+                            #         buildtree_log_content,
+                            #     ))
 
                 rctx.delete(buildtree_inner)
 
@@ -177,7 +189,7 @@ def _bootstrap(rctx, output, release, sha256, packages):
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
-            "dependencies": packages,
+            "dependencies": packages.keys(),
         }),
     )
 
@@ -199,17 +211,19 @@ def _bootstrap(rctx, output, release, sha256, packages):
     depend_info = collect_depend_info(
         rctx,
         output,
-        packages,
+        packages.keys(),
     )
 
     rctx.file("BUILD.bazel", _BUILD_BAZEL_TPL.format(
         os = pu.targets.os,
         arch = pu.targets.arch,
+        host_cpu_count = pu.host_cpus_count(),
         packages = "\n".join([
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
                 build_deps = _format_inner_list(deps, ":%s_build"),
                 lib_deps = _format_inner_list(deps, ":%s"),
+                cpus = "1" if not package in packages else packages[package],
             )
             for package, deps in depend_info.items()
         ]),
@@ -253,7 +267,7 @@ bootstrap = repository_rule(
             mandatory = True,
             doc = "The vcpkg version",
         ),
-        "packages": attr.string_list(
+        "packages": attr.string_dict(
             mandatory = True,
             doc = "Packages to install",
         ),

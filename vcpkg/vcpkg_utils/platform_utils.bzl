@@ -38,12 +38,16 @@ def _platform_downloads(rctx):
 
     return struct(url_tpl = url_tpl, sha_key = sha_key)
 
+def _host_cpus_cout(rctx):
+    return rctx.execute(["sysctl", "-n", "hw.ncpu"]).stdout.strip()
+
 def platform_utils(rctx):
     """Platform utils for vcpkg"""
     return struct(
         prefix = _platform_prefix(rctx),
         targets = _platform_targets(rctx),
         downloads = _platform_downloads(rctx),
+        host_cpus_count = lambda: _host_cpus_cout(rctx),
     )
 
 VcpkgPlatformTrippletProvider = provider(

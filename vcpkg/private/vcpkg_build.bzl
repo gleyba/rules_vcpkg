@@ -26,6 +26,11 @@ VcpkgPackageDepsInfo = provider(
     ],
 )
 
+def _unwrap_cpus_count(cpus, host_cpus):
+    if cpus == "HOST_CPUS":
+        return str(host_cpus)
+    return cpus
+
 def _vcpkg_build_impl(ctx):
     vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
 
@@ -69,10 +74,7 @@ def _vcpkg_build_impl(ctx):
         for dep_info in deps_list
     ]
 
-    inputs = [
-        vcpkg_info.vcpkg_manifest,
-        packages_list_file,
-    ] + [
+    inputs = [packages_list_file] + [
         item
         for sublist in [
             ctx.files.port,
@@ -104,7 +106,6 @@ def _vcpkg_build_impl(ctx):
             "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
             "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
             "__install_dir_path__": install_dir.path,
-            "__vcpkg_manifest_path__": vcpkg_info.vcpkg_manifest.path,
             "__packages_list_file__": packages_list_file.path,
             "__package_name__": ctx.attr.package_name,
             "__vcpkg_root__": vcpkg_root,
@@ -115,6 +116,10 @@ def _vcpkg_build_impl(ctx):
         },
     )
 
+    cpus = _unwrap_cpus_count(
+        ctx.attr.cpus,
+        vcpkg_info.host_cpu_count,
+    )
     ctx.actions.run(
         tools = [
             vcpkg_info.vcpkg_tool,
@@ -128,8 +133,11 @@ def _vcpkg_build_impl(ctx):
         ],
         executable = call_vcpkg_wrapper,
         env = {
-            "VCPKG_MAX_CONCURRENCY": "1",
+            "VCPKG_MAX_CONCURRENCY": cpus,
             "VCPKG_DEBUG": "1",
+        },
+        execution_requirements = {
+            "cpu:%s" % cpus: "",
         },
     )
 
@@ -157,6 +165,10 @@ vcpkg_build = rule(
             VcpkgBuiltPackageInfo,
             VcpkgPackageDepsInfo,
         ]),
+        "cpus": attr.string(
+            mandatory = True,
+            doc = "Cpu cores to use for package build, accept `HOST_CPUS` keyword",
+        ),
         "_tripplet": attr.label(
             default = "@rules_vcpkg//vcpkg/vcpkg_utils:vcpkg_triplet",
             doc = "Vcpkg triplet",

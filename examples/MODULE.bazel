@@ -1,0 +1,44 @@
+module(name = "vcpkg_examples")
+
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_vcpkg", version = "0.0.0")
+local_path_override(
+    module_name = "rules_vcpkg",
+    path = "..",
+)
+
+vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
+vcpkg.bootstrap(
+    release = "2025.04.09",
+    sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
+)
+vcpkg.install(package = "boost-asio")
+vcpkg.install(
+    cpus = "HOST_CPUS",
+    package = "openssl",
+)
+vcpkg.install(package = "fmt")
+vcpkg.install(
+    cpus = "HOST_CPUS",
+    package = "folly",
+)
+vcpkg.install(
+    cpus = "HOST_CPUS",
+    package = "duckdb",
+)
+# vcpkg.install(package = "qt", cpus = "HOST_CPUS")
+
+use_repo(
+    vcpkg,
+    "vcpkg",
+    "vcpkg_boost-asio",
+    "vcpkg_duckdb",
+    "vcpkg_fmt",
+    "vcpkg_folly",
+    "vcpkg_openssl",
+    # "vcpkg_qt",
+)
+
+register_toolchains("@vcpkg//:vcpkg_toolchain")
+
+# need autoconf

@@ -85,11 +85,12 @@ Hello FMT!
 - [ ] Test more sophisticated packages with complex transitive dependencies structure:
     - [x] Add [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html) example
     - [x] Add [Facebook Folly](https://github.com/facebook/folly) example
-    - [ ] Add [DuckDB](https://duckdb.org) example
+    - [x] Add [DuckDB](https://duckdb.org) example
     - [ ] Add [QT](https://www.qt.io/) example
     - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
     - [ ] Add [Google Cloud Cpp](https://github.com/googleapis/google-cloud-cpp) example
     - [ ] Add [Azure SDK for Cpp](https://github.com/Azure/azure-sdk-for-cpp/tree/main) example
 - [ ] Support other platforms besides Mac OS X aarh64, setup CI checks
+- [ ] Debug hermeticity and reproducibility
 - [ ] Support hermetic C/C++ Bazel toolchains by generating custom [Overlay Triplet](https://learn.microsoft.com/en-us/vcpkg/users/examples/overlay-triplets-linux-dynamic) with [VCPKG_CHAINLOAD_TOOLCHAIN_FILE](https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_chainload_toolchain_file) reference inside
 - [ ] Announce this work in Bazel slack

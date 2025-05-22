@@ -21,15 +21,15 @@ std::vector<package_control_t> read_packages(const fs::path& packages_outputs_li
     return packages_ctrls;
 }
 
-void write_manifest(const fs::path& vcpkg_meta_dir, const fs::path& manifest_path) {
-    std::ofstream manifest_info(vcpkg_meta_dir / "manifest-info.json");
-    manifest_info << "{\n" 
-        << "  \"manifest-path\": "
-        << manifest_path.lexically_relative(vcpkg_meta_dir)
-        << "\n"
-        << "}\n";
-    manifest_info.close();
-}
+// void write_manifest(const fs::path& vcpkg_meta_dir, const fs::path& manifest_path) {
+//     std::ofstream manifest_info(vcpkg_meta_dir / "manifest-info.json");
+//     manifest_info << "{\n" 
+//         << "  \"manifest-path\": "
+//         << manifest_path.lexically_relative(vcpkg_meta_dir)
+//         << "\n"
+//         << "}\n";
+//     manifest_info.close();
+// }
 
 void write_status(const fs::path& vcpkg_meta_dir, const std::vector<package_control_t>& packages_ctrls) {
     std::ofstream status_ofs(vcpkg_meta_dir / "status");
@@ -55,13 +55,13 @@ void write_listing(const fs::path& vcpkg_info_dir, const package_control_t& ctrl
 
 void prepare_install_dir(
     const fs::path& install_dir,
-    const fs::path& manifest_path,
+    // const fs::path& manifest_path,
     const fs::path& packages_outputs_list_path
 ) {
     auto packages_ctrls = read_packages(packages_outputs_list_path);
     fs::path vcpkg_meta_dir = install_dir / "vcpkg"; 
     fs::create_directories(vcpkg_meta_dir);
-    write_manifest(vcpkg_meta_dir, manifest_path);
+    // write_manifest(vcpkg_meta_dir, manifest_path);
     write_status(vcpkg_meta_dir, packages_ctrls);
 
     fs::path vcpkg_info_dir = vcpkg_meta_dir / "info";
@@ -132,16 +132,14 @@ void prepare_build_root(const fs::path& buildtrees_root) {
 
 int main(int argc, char ** argv) {
     fs::path install_dir { argv[1] };
-    fs::path manifest_path { argv[2] };
-    fs::path packages_outputs_list_path { argv[3] };
+    fs::path packages_outputs_list_path { argv[2] };
 
     prepare_install_dir(
         install_dir, 
-        manifest_path, 
         packages_outputs_list_path
     );
 
-    fs::path buildtrees_root { argv[4] };
+    fs::path buildtrees_root { argv[3] };
     prepare_build_root(buildtrees_root);
 
     return 0;

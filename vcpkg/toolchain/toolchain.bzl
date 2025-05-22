@@ -5,6 +5,7 @@ VcpgInfo = provider(
         "vcpkg_manifest",
         "vcpkg_files",
         "cmake_files",
+        "host_cpu_count",
     ],
 )
 
@@ -19,6 +20,7 @@ def _vcpkg_toolchain_impl(ctx):
             cmake_files = DefaultInfo(
                 files = depset(ctx.files.cmake_files),
             ),
+            host_cpu_count = ctx.attr.host_cpu_count,
         ),
     )
 
@@ -35,5 +37,9 @@ vcpkg_toolchain = rule(
         ),
         "vcpkg_files": attr.label_list(allow_files = True),
         "cmake_files": attr.label_list(allow_files = True),
+        "host_cpu_count": attr.int(
+            mandatory = True,
+            doc = "Number of CPU cores on machine",
+        ),
     },
 )

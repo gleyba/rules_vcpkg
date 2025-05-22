@@ -9,6 +9,10 @@ bootstrap = tag_class(attrs = {
 
 install = tag_class(attrs = {
     "package": attr.string(doc = "Package to install"),
+    "cpus": attr.string(
+        default = "1",
+        doc = "Cpu cores to use for package build, accept `HOST_CPUS` keyword",
+    ),
 })
 
 _CMAKE_BUILD_FILE = """\
@@ -51,7 +55,7 @@ def _vcpkg(mctx):
         fail("Unsupported OS/arch: %s/%s" % (mctx.os.name, mctx.os.arch))
 
     cur_bootstrap = None
-    packages = set()
+    packages = {}
     for mod in mctx.modules:
         for bootstrap in mod.tags.bootstrap:
             if cur_bootstrap:
@@ -65,7 +69,7 @@ def _vcpkg(mctx):
                 cur_bootstrap = bootstrap
 
         for install in mod.tags.install:
-            packages.add(install.package)
+            packages[install.package] = install.cpus
 
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
@@ -79,7 +83,7 @@ def _vcpkg(mctx):
         packages = packages,
     )
 
-    for package in packages:
+    for package in packages.keys():
         vcpkg_package(
             name = "vcpkg_%s" % package,
             package = package,
