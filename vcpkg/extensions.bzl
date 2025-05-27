@@ -1,6 +1,6 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//vcpkg:vcpkg.bzl", "vcpkg_package")
 load("//vcpkg/bootstrap:bootstrap.bzl", _bootstrap = "bootstrap")
+load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 
 bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version"),
@@ -15,45 +15,7 @@ install = tag_class(attrs = {
     ),
 })
 
-_CMAKE_BUILD_FILE = """\
-filegroup(
-    name = "cmake_bin",
-    srcs = ["bin/cmkae"],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "cmake_data",
-    srcs = glob(
-        [
-            "**",
-        ],
-        exclude = [
-            "WORKSPACE",
-            "WORKSPACE.bazel",
-            "BUILD",
-            "BUILD.bazel",
-            "**/* *",
-        ],
-    ),
-    visibility = ["//visibility:public"],
-)
-"""
-
 def _vcpkg(mctx):
-    if mctx.os.name.startswith("mac"):
-        http_archive(
-            name = "cmake",
-            urls = [
-                "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz",
-            ],
-            sha256 = "4c53ba41092617d1be2205dbc10bb5873a4c5ef5e9e399fc927ffbe78668a6d3",
-            strip_prefix = "cmake-4.0.2-macos-universal/CMake.app/Contents",
-            build_file_content = _CMAKE_BUILD_FILE,
-        )
-    else:
-        fail("Unsupported OS/arch: %s/%s" % (mctx.os.name, mctx.os.arch))
-
     cur_bootstrap = None
     packages = {}
     for mod in mctx.modules:
@@ -95,4 +57,8 @@ vcpkg = module_extension(
         "bootstrap": bootstrap,
         "install": install,
     },
+)
+
+vcpkg_external = module_extension(
+    implementation = lambda _: bootstrap_toolchains(name = "vcpkg_external"),
 )

@@ -29,9 +29,6 @@ vcpkg_toolchain(
         "//vcpkg/triplets",
         "//vcpkg/downloads:tools",
     ],
-    cmake_files = [
-        "@cmake//:cmake_data",
-    ],
     host_cpu_count = {host_cpu_count},
 )
 

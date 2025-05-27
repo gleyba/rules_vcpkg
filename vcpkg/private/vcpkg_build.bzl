@@ -34,9 +34,12 @@ def _unwrap_cpus_count(cpus, host_cpus):
 def _vcpkg_build_impl(ctx):
     vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
 
-    cmake_data = vcpkg_info.cmake_files.files.to_list()
+    vcpkg_external_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:external_toolchain_type"].vcpkg_external_info
 
-    cmake_bin = "/".join(cmake_data[0].path.split("/")[0:2] + ["bin"])
+    external_binaries = vcpkg_external_info.binaries.to_list()
+    external_transitive = vcpkg_external_info.transitive.to_list()
+
+    bin_dir = paths.dirname(external_binaries[0].path)
 
     deps_info = VcpkgPackageDepsInfo(
         deps = depset(
@@ -81,7 +84,8 @@ def _vcpkg_build_impl(ctx):
             ctx.files.buildtree,
             ctx.files.downloads,
             vcpkg_info.vcpkg_files.files.to_list(),
-            cmake_data,
+            external_binaries,
+            external_transitive,
             deps_outputs,
         ] + deps_ports
         for item in sublist
@@ -102,7 +106,7 @@ def _vcpkg_build_impl(ctx):
         output = call_vcpkg_wrapper,
         is_executable = True,
         substitutions = {
-            "__cmake_bin__": cmake_bin,
+            "__bin_dir__": bin_dir,
             "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
             "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
             "__install_dir_path__": install_dir.path,
@@ -137,7 +141,7 @@ def _vcpkg_build_impl(ctx):
             "VCPKG_DEBUG": "1",
         },
         execution_requirements = {
-            "cpu:%s" % cpus: "",
+            "resources:cpu:%s" % cpus: "",
         },
     )
 
@@ -187,5 +191,6 @@ vcpkg_build = rule(
     },
     toolchains = [
         "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
+        "@rules_vcpkg//vcpkg/toolchain:external_toolchain_type",
     ],
 )

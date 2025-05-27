@@ -12,31 +12,47 @@ vcpkg.bootstrap(
     release = "2025.04.09",
     sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
 )
-vcpkg.install(package = "boost-asio")
-vcpkg.install(
-    cpus = "HOST_CPUS",
-    package = "openssl",
-)
-vcpkg.install(package = "fmt")
-vcpkg.install(
-    cpus = "HOST_CPUS",
-    package = "folly",
-)
-vcpkg.install(
-    cpus = "HOST_CPUS",
-    package = "duckdb",
-)
-# vcpkg.install(package = "qt", cpus = "HOST_CPUS")
 
+vcpkg_external = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg_external")
+use_repo(vcpkg_external, "vcpkg_external")
+
+register_toolchains("@vcpkg_external//:vcpkg_external_toolchain")
+
+# vcpkg.install(package = "boost-asio")
+# vcpkg.install(
+#     cpus = "HOST_CPUS",
+#     package = "openssl",
+# )
+# vcpkg.install(package = "fmt")
+# vcpkg.install(
+#     cpus = "HOST_CPUS",
+#     package = "folly",
+# )
+# vcpkg.install(
+#     cpus = "HOST_CPUS",
+#     package = "duckdb",
+# )
+# vcpkg.install(
+#     package = "qt",
+#     cpus = "HOST_CPUS",
+# )
+
+# use_repo(
+#     vcpkg,
+#     "vcpkg",
+#     "vcpkg_boost-asio",
+#     "vcpkg_duckdb",
+#     "vcpkg_fmt",
+#     "vcpkg_folly",
+#     "vcpkg_openssl",
+#     "vcpkg_qt",
+# )
+
+vcpkg.install(package = "hunspell")
 use_repo(
     vcpkg,
     "vcpkg",
-    "vcpkg_boost-asio",
-    "vcpkg_duckdb",
-    "vcpkg_fmt",
-    "vcpkg_folly",
-    "vcpkg_openssl",
-    # "vcpkg_qt",
+    "vcpkg_hunspell",
 )
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")

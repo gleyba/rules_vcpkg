@@ -3,7 +3,7 @@
 set -eu
 
 export HOME=/tmp/home
-export PATH="${PWD}/__cmake_bin__:/usr/bin:/bin"
+export PATH="${PWD}/__bin_dir__" # ":/usr/bin:/bin"
 
 vcpkg_bin="${PWD}/__vcpkg_bin__"
 prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"

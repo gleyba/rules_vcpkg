@@ -1,5 +1,6 @@
 common --nosandbox_default_allow_network
 common --incompatible_allow_tags_propagation
+# common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 build --incompatible_strict_action_env
 build --experimental_reuse_sandbox_directories

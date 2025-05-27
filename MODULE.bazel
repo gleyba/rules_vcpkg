@@ -9,5 +9,20 @@ bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
 bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_foreign_cc", version = "0.14.0")
 
 bazel_dep(name = "buildifier_prebuilt", version = "8.0.3", dev_dependency = True)
+
+# vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
+# vcpkg.bootstrap(
+#     release = "2025.04.09",
+#     sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
+# )
+
+# vcpkg.install(package = "fmt")
+
+# use_repo(
+#     vcpkg,
+#     "vcpkg",
+#     "vcpkg_fmt",
+# )
