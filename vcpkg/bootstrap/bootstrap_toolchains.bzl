@@ -26,6 +26,22 @@ filegroup(
 )
 """
 
+_PERL_BUILD_FILE = """\
+filegroup(
+    name = "perl_data",
+    srcs = glob(["**/*"]),
+    visibility = [ "//:__pkg__" ],
+)
+"""
+
+_AUTOCONF_BUILD_FILE = """\
+filegroup(
+    name = "autoconf_data",
+    srcs = glob(["**/*"]),
+    visibility = [ "//:__pkg__" ],
+)
+"""
+
 VcpgExternalInfo = provider(
     doc = "Information about external binaries used with vcpkg toolchain.",
     fields = [
@@ -65,6 +81,7 @@ vcpkg_external_toolchain(
     transitive = [
         "//cmake:cmake_data",
         "//coreutils:coreutils_data",
+        "//autoconf:autoconf_data",
     ],
 )
 
@@ -87,6 +104,7 @@ toolchain(
 def _bootstrap_toolchains_impl(rctx):
     pu = platform_utils(rctx)
 
+    rctx.extract(Label("//vcpkg/bootstrap/archives:autoconf.zip"))
     if rctx.os.name.startswith("mac"):
         rctx.download_and_extract(
             url = "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz",
@@ -101,14 +119,23 @@ def _bootstrap_toolchains_impl(rctx):
                 strip_prefix = "coreutils-0.1.0-aarch64-apple-darwin",
                 output = "coreutils",
             )
+            rctx.download_and_extract(
+                url = "https://github.com/skaji/relocatable-perl/releases/download/5.40.1.0/perl-darwin-arm64.tar.xz",
+                sha256 = "e58b98338bc52f352dc95310363ab6c725897557512b90b593c70ea357f1b2ab",
+                strip_prefix = "perl-darwin-arm64",
+                output = "perl",
+            )
+            rctx.extract(Label("//vcpkg/bootstrap/archives:m4.arm64.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:make.arm64.zip"))
         else:
             fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
-
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
 
     rctx.file("cmake/BUILD.bazel", _CMAKE_BUILD_FILE)
     rctx.file("coreutils/BUILD.bazel", _COREUTILS_BUILD_FILE)
+    rctx.file("perl/BUILD.bazel", _PERL_BUILD_FILE)
+    rctx.file("autoconf/BUILD.bazel", _AUTOCONF_BUILD_FILE)
 
     rctx.symlink("/bin/bash", "bin/bash")
     rctx.symlink("/bin/sh", "bin/sh")
@@ -130,6 +157,7 @@ def _bootstrap_toolchains_impl(rctx):
         exec_check(rctx, "symlink", ["coreutils/coreutils", "ln", "-s", target, link_name])
 
     symlink_rel("../cmake/bin/cmake", "bin/cmake")
+    symlink_rel("../perl/bin/perl", "bin/perl")
 
     for coretool in exec_check(rctx, "list coreutils", ["coreutils/coreutils", "--list"]).stdout.split("\n"):
         coretool = coretool.strip()
@@ -138,10 +166,16 @@ def _bootstrap_toolchains_impl(rctx):
 
         symlink_rel("../coreutils/coreutils", "bin/%s" % coretool)
 
-    rctx.file("BUILD.bazel", _BUILD_BAZEL_TPL.format(
-        os = pu.targets.os,
-        arch = pu.targets.arch,
-    ))
+    for autoconf_bin in rctx.path("autoconf/bin").readdir():
+        symlink_rel("../autoconf/bin/%s" % autoconf_bin.basename, "bin/%s" % autoconf_bin.basename)
+
+    rctx.file(
+        "BUILD.bazel",
+        _BUILD_BAZEL_TPL.format(
+            os = pu.targets.os,
+            arch = pu.targets.arch,
+        ),
+    )
 
 bootstrap_toolchains = repository_rule(
     implementation = _bootstrap_toolchains_impl,

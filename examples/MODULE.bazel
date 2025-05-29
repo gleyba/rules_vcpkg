@@ -56,5 +56,3 @@ use_repo(
 )
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")
-
-# need autoconf
