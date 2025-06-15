@@ -1,46 +1,62 @@
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
-_CMAKE_BUILD_FILE = """\
-filegroup(
-    name = "cmake_data",
-    srcs = glob(
-        [ "**" ],
-        exclude = [
-            "WORKSPACE",
-            "WORKSPACE.bazel",
-            "BUILD",
-            "BUILD.bazel",
-            "**/* *",
-        ],
-    ),
-    visibility = ["//:__pkg__"],
-)
-"""
+# _CMAKE_BUILD_FILE = """\
+# filegroup(
+#     name = "cmake_data",
+#     srcs = glob(
+#         [ "**" ],
+#         exclude = [
+#             "WORKSPACE",
+#             "WORKSPACE.bazel",
+#             "BUILD",
+#             "BUILD.bazel",
+#             "**/* *",
+#         ],
+#     ),
+#     visibility = ["//:__pkg__"],
+# )
+# """
 
-_COREUTILS_BUILD_FILE = """\
-filegroup(
-    name = "coreutils_data",
-    srcs = [ "coreutils" ],
-    visibility = [ "//:__pkg__" ],
-)
-"""
+# _COREUTILS_BUILD_FILE = """\
+# filegroup(
+#     name = "coreutils_data",
+#     srcs = [ "coreutils" ],
+#     visibility = [ "//:__pkg__" ],
+# )
+# """
 
-_PERL_BUILD_FILE = """\
-filegroup(
-    name = "perl_data",
-    srcs = glob(["**/*"]),
-    visibility = [ "//:__pkg__" ],
-)
-"""
+# _PERL_BUILD_FILE = """\
+# filegroup(
+#     name = "perl_data",
+#     srcs = glob(["**/*"]),
+#     visibility = [ "//:__pkg__" ],
+# )
+# """
 
-_AUTOCONF_BUILD_FILE = """\
-filegroup(
-    name = "autoconf_data",
-    srcs = glob(["**/*"]),
-    visibility = [ "//:__pkg__" ],
-)
-"""
+# _AUTOCONF_BUILD_FILE = """\
+# filegroup(
+#     name = "autoconf_data",
+#     srcs = glob(["**/*"]),
+#     visibility = [ "//:__pkg__" ],
+# )
+# """
+
+# _AUTOMAKE_BUILD_FILE = """\
+# filegroup(
+#     name = "automake_data",
+#     srcs = glob(["**/*"]),
+#     visibility = [ "//:__pkg__" ],
+# )
+# """
+
+# _LIBTOOL_BUILD_FILE = """\
+# filegroup(
+#     name = "libtool_data",
+#     srcs = glob(["**/*"]),
+#     visibility = [ "//:__pkg__" ],
+# )
+# """
 
 VcpgExternalInfo = provider(
     doc = "Information about external binaries used with vcpkg toolchain.",
@@ -78,11 +94,14 @@ load("@rules_vcpkg//vcpkg/bootstrap:bootstrap_toolchains.bzl", "vcpkg_external_t
 vcpkg_external_toolchain(
     name = "vcpkg_external",
     binaries = glob([ "bin/**" ]),
-    transitive = [
-        "//cmake:cmake_data",
-        "//coreutils:coreutils_data",
-        "//autoconf:autoconf_data",
-    ],
+    transitive = glob(
+        [ "**/*" ],
+        exclude = [
+            "bin/**",
+            "**/*.bazel",
+            "**/* *",
+        ],    
+    ),
 )
 
 toolchain(
@@ -104,7 +123,6 @@ toolchain(
 def _bootstrap_toolchains_impl(rctx):
     pu = platform_utils(rctx)
 
-    rctx.extract(Label("//vcpkg/bootstrap/archives:autoconf.zip"))
     if rctx.os.name.startswith("mac"):
         rctx.download_and_extract(
             url = "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz",
@@ -125,27 +143,49 @@ def _bootstrap_toolchains_impl(rctx):
                 strip_prefix = "perl-darwin-arm64",
                 output = "perl",
             )
-            rctx.extract(Label("//vcpkg/bootstrap/archives:m4.arm64.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:make.arm64.zip"))
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:arm64/autoconf.zip"),
+                strip_prefix = "autoconf",
+            )
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:arm64/automake.zip"),
+                strip_prefix = "automake",
+            )
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:arm64/libtool.zip"),
+                strip_prefix = "libtool",
+            )
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/m4.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/make.zip"))
         else:
             fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
 
-    rctx.file("cmake/BUILD.bazel", _CMAKE_BUILD_FILE)
-    rctx.file("coreutils/BUILD.bazel", _COREUTILS_BUILD_FILE)
-    rctx.file("perl/BUILD.bazel", _PERL_BUILD_FILE)
-    rctx.file("autoconf/BUILD.bazel", _AUTOCONF_BUILD_FILE)
+    # rctx.file("cmake/BUILD.bazel", _CMAKE_BUILD_FILE)
+    # rctx.file("coreutils/BUILD.bazel", _COREUTILS_BUILD_FILE)
+    # rctx.file("perl/BUILD.bazel", _PERL_BUILD_FILE)
+    # rctx.file("autoconf/BUILD.bazel", _AUTOCONF_BUILD_FILE)
+    # rctx.file("automake/BUILD.bazel", _AUTOMAKE_BUILD_FILE)
+    # rctx.file("libtool/BUILD.bazel", _LIBTOOL_BUILD_FILE)
 
     rctx.symlink("/bin/bash", "bin/bash")
     rctx.symlink("/bin/sh", "bin/sh")
     rctx.symlink("/usr/bin/git", "bin/git")
+    rctx.symlink("/usr/bin/grep", "bin/grep")
+    rctx.symlink("/usr/bin/sed", "bin/sed")
+    rctx.symlink("/usr/bin/cmp", "bin/cmp")
+    rctx.symlink("/usr/bin/awk", "bin/awk")
+    rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
+    rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 
     if rctx.os.name.startswith("mac"):
         rctx.symlink("/usr/sbin/sysctl", "bin/sysctl")
         rctx.symlink("/usr/bin/otool", "bin/otool")
         rctx.symlink("/usr/bin/file", "bin/file")
         rctx.symlink("/usr/bin/install_name_tool", "bin/install_name_tool")
+        # rctx.symlink("/usr/bin/libtool", "bin/libtool")
+        rctx.symlink("/usr/bin/ranlib", "bin/ranlib")
 
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")
@@ -166,8 +206,16 @@ def _bootstrap_toolchains_impl(rctx):
 
         symlink_rel("../coreutils/coreutils", "bin/%s" % coretool)
 
-    for autoconf_bin in rctx.path("autoconf/bin").readdir():
-        symlink_rel("../autoconf/bin/%s" % autoconf_bin.basename, "bin/%s" % autoconf_bin.basename)
+    # def symlink_all_bins(dir):
+    #     for bin in rctx.path("%s/bin" % dir).readdir():
+    #         symlink_rel(
+    #             "../%s/bin/%s" % (dir, bin.basename),
+    #             "bin/%s" % bin.basename,
+    #         )
+
+    # symlink_all_bins("autoconf")
+    # symlink_all_bins("automake")
+    # symlink_all_bins("libtool")
 
     rctx.file(
         "BUILD.bazel",
