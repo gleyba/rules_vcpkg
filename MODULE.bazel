@@ -9,7 +9,17 @@ bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
 bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "rules_foreign_cc", version = "0.14.0")
+bazel_dep(name = "rules_python", version = "1.4.1")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(python_version = "3.11")
+
+vcpkg_external = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg_external")
+use_repo(vcpkg_external, "vcpkg_external")
+
+register_toolchains("@vcpkg_external//:vcpkg_external_toolchain")
+
+register_toolchains("//vcpkg/toolchain:current_toolchain")
 
 bazel_dep(name = "buildifier_prebuilt", version = "8.0.3", dev_dependency = True)
 

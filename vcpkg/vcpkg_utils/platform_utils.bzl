@@ -49,13 +49,3 @@ def platform_utils(rctx):
         downloads = _platform_downloads(rctx),
         host_cpus_count = lambda: _host_cpus_cout(rctx),
     )
-
-VcpkgPlatformTrippletProvider = provider(
-    doc = "Vcpkg platform triplet provider",
-    fields = ["triplet"],
-)
-
-vcpkg_platform_triplet = rule(
-    implementation = lambda ctx: VcpkgPlatformTrippletProvider(triplet = ctx.attr.triplet),
-    attrs = {"triplet": attr.string(doc = "Vcpkg platform triplet")},
-)

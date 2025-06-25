@@ -1,27 +1,10 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
-load(":platform_utils.bzl", "vcpkg_platform_triplet")
-
-config_setting(
-    name = "arm64_osx",
-    constraint_values = [
-        "@platforms//cpu:arm64",
-        "@platforms//os:osx",
-    ],
-)
 
 config_setting(
     name = "is_release_build",
     values = {
         "compilation_mode": "opt",
     },
-    visibility = ["//visibility:public"],
-)
-
-vcpkg_platform_triplet(
-    name = "vcpkg_triplet",
-    triplet = select({
-        ":arm64_osx": "arm64-osx",
-    }),
     visibility = ["//visibility:public"],
 )
 

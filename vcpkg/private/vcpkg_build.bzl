@@ -1,14 +1,4 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//vcpkg/vcpkg_utils:platform_utils.bzl", "VcpkgPlatformTrippletProvider")
-
-VcpkgPackageInfo = provider(
-    doc = "Vcpkg package information",
-    fields = [
-        "name",
-        "port",
-        "buildtree",
-    ],
-)
 
 VcpkgBuiltPackageInfo = provider(
     doc = "Vcpkg built package info",
@@ -16,6 +6,7 @@ VcpkgBuiltPackageInfo = provider(
         "name",
         "port",
         "output",
+        "downloads",
     ],
 )
 
@@ -31,9 +22,19 @@ def _unwrap_cpus_count(cpus, host_cpus):
         return str(host_cpus)
     return cpus
 
+def _commonprefix(m):
+    if not m:
+        return ""
+    s1 = min(m)
+    s2 = max(m)
+    for i, c in enumerate(s1):
+        if c != s2[i]:
+            return s1[:i]
+    return s1
+
 def _vcpkg_build_impl(ctx):
     vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
-
+    vcpkg_current_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:current_toolchain_type"].vcpkg_current_info
     vcpkg_external_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:external_toolchain_type"].vcpkg_external_info
 
     external_binaries = vcpkg_external_info.binaries.to_list()
@@ -77,6 +78,13 @@ def _vcpkg_build_impl(ctx):
         for dep_info in deps_list
     ]
 
+    deps_downloads = [
+        dep_info.downloads
+        for dep_info in deps_list
+    ]
+
+    overlay_triplets = vcpkg_current_info.overlay_triplets.to_list()
+
     inputs = [packages_list_file] + [
         item
         for sublist in [
@@ -84,10 +92,13 @@ def _vcpkg_build_impl(ctx):
             ctx.files.buildtree,
             ctx.files.downloads,
             vcpkg_info.vcpkg_files.files.to_list(),
+            vcpkg_current_info.binaries.to_list(),
+            vcpkg_current_info.transitive.to_list(),
+            overlay_triplets,
             external_binaries,
             external_transitive,
             deps_outputs,
-        ] + deps_ports
+        ] + deps_downloads + deps_ports
         for item in sublist
     ]
 
@@ -95,7 +106,7 @@ def _vcpkg_build_impl(ctx):
 
     package_output_dir_path = "{name}/packages/{name}_{triplet}".format(
         name = ctx.attr.package_name,
-        triplet = ctx.attr._tripplet[VcpkgPlatformTrippletProvider].triplet,
+        triplet = vcpkg_current_info.triplet,
     )
 
     package_output_dir = ctx.actions.declare_directory(package_output_dir_path)
@@ -117,6 +128,11 @@ def _vcpkg_build_impl(ctx):
             "__downloads_root__": "%s/downloads" % vcpkg_root,
             "__install_root__": install_dir.path,
             "__packages_root__": paths.dirname(package_output_dir.path),
+            "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
+            "__overlay_tripplets__": _commonprefix([
+                ot.path
+                for ot in overlay_triplets
+            ]),
         },
     )
 
@@ -154,6 +170,7 @@ def _vcpkg_build_impl(ctx):
             name = ctx.attr.package_name,
             port = ctx.files.port,
             output = package_output_dir,
+            downloads = ctx.files.downloads,
         ),
         deps_info,
     ]
@@ -173,10 +190,6 @@ vcpkg_build = rule(
             mandatory = True,
             doc = "Cpu cores to use for package build, accept `HOST_CPUS` keyword",
         ),
-        "_tripplet": attr.label(
-            default = "@rules_vcpkg//vcpkg/vcpkg_utils:vcpkg_triplet",
-            doc = "Vcpkg triplet",
-        ),
         "_call_vcpkg_wrapper_tpl": attr.label(
             default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
             allow_single_file = True,
@@ -191,6 +204,7 @@ vcpkg_build = rule(
     },
     toolchains = [
         "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
+        "@rules_vcpkg//vcpkg/toolchain:current_toolchain_type",
         "@rules_vcpkg//vcpkg/toolchain:external_toolchain_type",
     ],
 )

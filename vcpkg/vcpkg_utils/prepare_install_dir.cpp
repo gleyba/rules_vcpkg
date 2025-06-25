@@ -97,7 +97,7 @@ void prepare_install_dir(
     }
 }
 
-void prepare_build_root(const fs::path& buildtrees_root) {
+void prepare_build_root(const fs::path& buildtrees_root, const fs::path& buildtrees_tmp) {
     for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
         fs::path src_path = package_buildtree_entry.path() / "src";
         
@@ -111,7 +111,7 @@ void prepare_build_root(const fs::path& buildtrees_root) {
             }
 
             fs::path src = src_entry.path();
-            fs::path dst =  src;
+            fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
             dst.replace_extension("");
             fs::create_directories(dst);
 
@@ -140,7 +140,8 @@ int main(int argc, char ** argv) {
     );
 
     fs::path buildtrees_root { argv[3] };
-    prepare_build_root(buildtrees_root);
+    fs::path buildtrees_tmp { argv[4] };
+    prepare_build_root(buildtrees_root, buildtrees_tmp);
 
     return 0;
 }

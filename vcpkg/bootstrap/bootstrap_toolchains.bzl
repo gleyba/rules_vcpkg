@@ -130,6 +130,11 @@ def _bootstrap_toolchains_impl(rctx):
             strip_prefix = "cmake-4.0.2-macos-universal/CMake.app/Contents",
             output = "cmake",
         )
+        rctx.download_and_extract(
+            url = "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-mac.zip",
+            sha256 = "229314c7ef65e9c11d19f84e5f4bb374105a4f21f64ed55e8f403df765ab52a7",
+            output = "bin",
+        )
         if rctx.os.arch == "aarch64":
             rctx.download_and_extract(
                 url = "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-aarch64-apple-darwin.tar.gz",
@@ -176,16 +181,21 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/sed", "bin/sed")
     rctx.symlink("/usr/bin/cmp", "bin/cmp")
     rctx.symlink("/usr/bin/awk", "bin/awk")
+    # rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
+
+    rctx.symlink("/usr/bin/python3", "bin/python3")
     rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
-    rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
+    # rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 
     if rctx.os.name.startswith("mac"):
         rctx.symlink("/usr/sbin/sysctl", "bin/sysctl")
         rctx.symlink("/usr/bin/otool", "bin/otool")
         rctx.symlink("/usr/bin/file", "bin/file")
         rctx.symlink("/usr/bin/install_name_tool", "bin/install_name_tool")
+
         # rctx.symlink("/usr/bin/libtool", "bin/libtool")
         rctx.symlink("/usr/bin/ranlib", "bin/ranlib")
+        rctx.symlink("/usr/bin/ar", "bin/ar")
 
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")

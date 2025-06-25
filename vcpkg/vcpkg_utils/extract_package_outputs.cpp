@@ -26,31 +26,32 @@ int main(int argc, char ** argv) {
 
     fs::create_directories(output_dir);
 
-    if (!fs::exists(scan_dir)) {
-        if (collect_type == "libs") {
-            fs::copy_file(empty_lib, output_dir / "lib_.a");
+    std::size_t files_copied = 0;
+    if (fs::exists(scan_dir)) {
+        for (const auto& dir_entry : fs::recursive_directory_iterator{scan_dir}) {
+            if (dir_entry.is_directory()) {
+                continue;
+            }
+        
+            auto entry_path = dir_entry.path();
+
+            if (extension && !ends_with(entry_path.filename(), extension.value())) {
+                continue;
+            }
+            
+            auto relative_path = entry_path.lexically_relative(scan_dir);
+
+            auto install_path = output_dir / relative_path;
+
+            fs::create_directories(install_path.parent_path());
+
+            fs::copy_file(entry_path, install_path);
+            files_copied += 1;
         }
-        return 0;
     }
 
-    for (const auto& dir_entry : fs::recursive_directory_iterator{scan_dir}) {
-        if (dir_entry.is_directory()) {
-            continue;
-        }
-     
-        auto entry_path = dir_entry.path();
-
-        if (extension && !ends_with(entry_path.filename(), extension.value())) {
-            continue;
-        }
-        
-        auto relative_path = entry_path.lexically_relative(scan_dir);
-
-        auto install_path = output_dir / relative_path;
-
-        fs::create_directories(install_path.parent_path());
-
-        fs::copy_file(entry_path, install_path);
+    if (files_copied == 0 && collect_type == "libs") {
+        fs::copy_file(empty_lib, output_dir / "lib_.a");
     }
 
     return 0;

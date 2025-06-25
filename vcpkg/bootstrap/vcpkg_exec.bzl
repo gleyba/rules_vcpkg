@@ -24,6 +24,7 @@ def vcpkg_exec(rctx, cmd, args, workdir):
 
     vcpkg_env = {
         # "X_VCPKG_REGISTRIES_CACHE": "%s/registries" % workdir,
+        "X_VCPKG_BUILD_GNU_LIBICONV": "1",
         "VCPKG_DEFAULT_BINARY_CACHE": "%s/cache" % full_path,
         "VCPKG_ROOT": "%s/vcpkg" % full_path,
         "VCPKG_DOWNLOADS": "%s/vcpkg/downloads" % full_path,

@@ -1,5 +1,6 @@
 module(name = "vcpkg_examples")
 
+bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_vcpkg", version = "0.0.0")
 local_path_override(
@@ -9,14 +10,9 @@ local_path_override(
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
-    release = "2025.04.09",
-    sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
+    release = "2025.06.13",
+    sha256 = "ea2d0f029331ef0f58cb2d87c5e3f2c4606d927c63dc81d56d81a632f3dca45d",
 )
-
-vcpkg_external = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg_external")
-use_repo(vcpkg_external, "vcpkg_external")
-
-register_toolchains("@vcpkg_external//:vcpkg_external_toolchain")
 
 # vcpkg.install(package = "boost-asio")
 # vcpkg.install(
@@ -48,11 +44,11 @@ register_toolchains("@vcpkg_external//:vcpkg_external_toolchain")
 #     "vcpkg_qt",
 # )
 
-vcpkg.install(package = "hunspell")
+vcpkg.install(package = "libxml2")
 use_repo(
     vcpkg,
     "vcpkg",
-    "vcpkg_hunspell",
+    "vcpkg_libxml2",
 )
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")

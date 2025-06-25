@@ -27,7 +27,6 @@ vcpkg_toolchain(
         "//vcpkg:.vcpkg-root",
         "//vcpkg/scripts",
         "//vcpkg/triplets",
-        "//vcpkg/downloads:tools",
     ],
     host_cpu_count = {host_cpu_count},
 )
@@ -78,16 +77,6 @@ exports_files(
     ],
     visibility = ["//visibility:public"],
 )
-"""
-
-_DOWNLOADS_BAZEL_TPL = """\
-filegroup(
-    name = "tools",
-    srcs = glob(["tools/**/*"]),
-    visibility = ["//visibility:public"],
-)
-
-{packages_downloads}\
 """
 
 _PACKAGE_DOWNLOAD_TPL = """\
@@ -228,15 +217,13 @@ def _bootstrap(rctx, output, release, sha256, packages):
 
     rctx.file("vcpkg/BUILD.bazel", _VCPKG_BAZEL)
 
-    rctx.file("vcpkg/downloads/BUILD.bazel", _DOWNLOADS_BAZEL_TPL.format(
-        packages_downloads = "\n".join([
-            _PACKAGE_DOWNLOAD_TPL.format(
-                package_name = package_name,
-                downloads = _format_inner_list(downloads, "%s"),
-            )
-            for package_name, downloads in downloads_per_package.items()
-        ]),
-    ))
+    rctx.file("vcpkg/downloads/BUILD.bazel", "\n".join([
+        _PACKAGE_DOWNLOAD_TPL.format(
+            package_name = package_name,
+            downloads = _format_inner_list(downloads, "%s"),
+        )
+        for package_name, downloads in downloads_per_package.items()
+    ]))
     rctx.file("vcpkg/scripts/BUILD.bazel", _SCRIPTS_BAZEL)
     rctx.file("vcpkg/triplets/BUILD.bazel", _TRIPLETS_BAZEL)
     rctx.file("vcpkg/ports/BUILD.bazel", "\n".join([
