@@ -1,5 +1,43 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+DEFAULT_TRIPLET_SETS = {
+    "X_VCPKG_BUILD_GNU_LIBICONV": "1",
+}
+
+DEFAULT_TRIPLET_DEFINITIONS = {
+    "__DATE__": "\\\"redacted\\\"",
+    "__TIMESTAMP__": "\\\"redacted\\\"",
+    "__TIME__": "\\\"redacted\\\"",
+}
+
+def _to_cflags(definitions):
+    return [
+        "-D%s=%s" % (k, v) if v else "-D%s" % k
+        for k, v in definitions.items()
+    ]
+
+DEFAULT_TIPLET_LISTS = {
+    "VCPKG_C_FLAGS": _to_cflags(DEFAULT_TRIPLET_DEFINITIONS),
+    "VCPKG_CXX_FLAGS": _to_cflags(DEFAULT_TRIPLET_DEFINITIONS),
+}
+
+def format_additions(lists, sets):
+    result = []
+    if lists:
+        for k, values in lists.items():
+            result += [
+                "string(APPEND %s \" %s\")" % (k, v)
+                for v in values
+            ] + [""]
+
+    if sets:
+        result += [
+            "set(%s %s)" % item
+            for item in sets.items()
+        ] + [""]
+
+    return {"%%ADDITIONS%%": "\n".join(result)}
+
 VcpgCurrentInfo = provider(
     doc = "Information about current binaries from registered toolchains used with vcpkg.",
     fields = [
@@ -42,26 +80,30 @@ def _current_toolchain_impl(ctx):
     if not cc_compiler_str:
         fail("Can't detect CXX compiler path")
 
-    substitutions = {
-        "%%ARCH_SHORT%%": ctx.attr.arch_short,
-        "%%ARCH_LONG%%": ctx.attr.arch_long,
-        "%%SYSTEM_NAME%%": ctx.attr.system_name,
-        "%%CXX_COMPILER%%": (
-            cc_compiler_str if paths.is_absolute(cc_compiler_str) else "$ENV{VCPKG_EXEC_ROOT}/%s" % cc_compiler_str
-        ),
-    }
+    cxx_compiler_resolved = (
+        cc_compiler_str if paths.is_absolute(cc_compiler_str) else "\"$ENV{VCPKG_EXEC_ROOT}/%s\"" % cc_compiler_str
+    )
 
     triplet_cmake = ctx.actions.declare_file("overlay_triplets/%s.cmake" % ctx.attr.triplet)
+    toolchain_cmake = ctx.actions.declare_file("overlay_triplets/toolchain.cmake")
     ctx.actions.expand_template(
         template = ctx.file.triplet_template,
         output = triplet_cmake,
-        substitutions = substitutions,
+        substitutions = ctx.attr.substitutions | format_additions(
+            DEFAULT_TIPLET_LISTS,
+            DEFAULT_TRIPLET_SETS | {
+                "VCPKG_DETECTED_CMAKE_C_COMPILER": cxx_compiler_resolved,
+                "VCPKG_DETECTED_CMAKE_CXX_COMPILER": cxx_compiler_resolved,
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "\"$ENV{VCPKG_EXEC_ROOT}/%s\"" % toolchain_cmake.path,
+            },
+        ),
     )
-    toolchain_cmake = ctx.actions.declare_file("overlay_triplets/toolchain.cmake")
     ctx.actions.expand_template(
         template = ctx.file.toolchain_template,
         output = toolchain_cmake,
-        substitutions = substitutions,
+        substitutions = ctx.attr.substitutions | {
+            "%%CXX_COMPILER%%": cxx_compiler_resolved,
+        },
     )
 
     return [
@@ -91,16 +133,8 @@ def _current_toolchain_impl(ctx):
 current_toolchain = rule(
     implementation = _current_toolchain_impl,
     attrs = {
-        "arch_short": attr.string(
-            doc = "Architecture, short version",
-            mandatory = True,
-        ),
-        "arch_long": attr.string(
-            doc = "Architecture, long version",
-            mandatory = True,
-        ),
-        "system_name": attr.string(
-            doc = "Operation system name",
+        "substitutions": attr.string_dict(
+            doc = "Vcpkg platform substitutions",
             mandatory = True,
         ),
         "triplet": attr.string(

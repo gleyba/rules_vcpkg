@@ -181,9 +181,9 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/sed", "bin/sed")
     rctx.symlink("/usr/bin/cmp", "bin/cmp")
     rctx.symlink("/usr/bin/awk", "bin/awk")
-    # rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
+    rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
 
-    rctx.symlink("/usr/bin/python3", "bin/python3")
+    # rctx.symlink("/usr/bin/python3", "bin/python3")
     rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
     # rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 

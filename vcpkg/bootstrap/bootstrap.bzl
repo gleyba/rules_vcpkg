@@ -1,5 +1,6 @@
 load("//vcpkg/bootstrap:collect_depend_info.bzl", "collect_depend_info")
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "vcpkg_exec")
+load("//vcpkg/toolchain:current_toolchain.bzl", "DEFAULT_TRIPLET_SETS", "format_additions")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
@@ -183,6 +184,15 @@ def _bootstrap(rctx, output, release, sha256, packages):
         "vcpkg_wrapper.sh",
         _VCPKG_WRAPPER,
         executable = True,
+    )
+
+    rctx.template(
+        "overlay_triplets/%s.cmake" % pu.cmake_definitions.triplet,
+        pu.triplet_template,
+        substitutions = pu.cmake_definitions.substitutions | format_additions(
+            {},
+            DEFAULT_TRIPLET_SETS,
+        ),
     )
 
     vcpkg_exec(

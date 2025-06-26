@@ -27,8 +27,8 @@ def _commonprefix(m):
         return ""
     s1 = min(m)
     s2 = max(m)
-    for i, c in enumerate(s1):
-        if c != s2[i]:
+    for i in range(len(s1)):
+        if s1[i] != s2[i]:
             return s1[:i]
     return s1
 
@@ -37,9 +37,11 @@ def _vcpkg_build_impl(ctx):
     vcpkg_current_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:current_toolchain_type"].vcpkg_current_info
     vcpkg_external_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:external_toolchain_type"].vcpkg_external_info
 
+    current_binaries = vcpkg_current_info.binaries.to_list()
     external_binaries = vcpkg_external_info.binaries.to_list()
     external_transitive = vcpkg_external_info.transitive.to_list()
 
+    cur_bin_dir = paths.dirname(current_binaries[0].path)
     bin_dir = paths.dirname(external_binaries[0].path)
 
     deps_info = VcpkgPackageDepsInfo(
@@ -91,8 +93,8 @@ def _vcpkg_build_impl(ctx):
             ctx.files.port,
             ctx.files.buildtree,
             ctx.files.downloads,
+            current_binaries,
             vcpkg_info.vcpkg_files.files.to_list(),
-            vcpkg_current_info.binaries.to_list(),
             vcpkg_current_info.transitive.to_list(),
             overlay_triplets,
             external_binaries,
@@ -118,6 +120,7 @@ def _vcpkg_build_impl(ctx):
         is_executable = True,
         substitutions = {
             "__bin_dir__": bin_dir,
+            "__cur_bin_dir__": cur_bin_dir,
             "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
             "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
             "__install_dir_path__": install_dir.path,

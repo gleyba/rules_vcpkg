@@ -28,7 +28,7 @@ def vcpkg_exec(rctx, cmd, args, workdir):
         "VCPKG_DEFAULT_BINARY_CACHE": "%s/cache" % full_path,
         "VCPKG_ROOT": "%s/vcpkg" % full_path,
         "VCPKG_DOWNLOADS": "%s/vcpkg/downloads" % full_path,
-        # "VCPKG_OVERLAY_PORTS": "%s/overlay_ports" % workdir,
+        "VCPKG_OVERLAY_TRIPLETS": "%s/overlay_triplets" % workdir,
     }
 
     vcpkg_args = [
@@ -36,7 +36,7 @@ def vcpkg_exec(rctx, cmd, args, workdir):
         "--x-install-root=install",
         "--x-packages-root=packages",
         "--downloads-root=vcpkg/downloads",
-        # "--overlay-ports=overlay_ports",
+        "--overlay-triplets=overlay_triplets",
         "--vcpkg-root=vcpkg",
     ]
 
