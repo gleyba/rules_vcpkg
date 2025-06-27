@@ -115,10 +115,9 @@ filegroup(
 _DOWNLOAD_TRY_PREFIX = "Trying to download "
 _DOWNLOAD_TRY_POSTFIX = " using asset cache script"
 
-def _extract_downloads(rctx, output):
-    result = {}
+def _extract_downloads(rctx, result, output):
     for buildtree in rctx.path("%s/vcpkg/buildtrees" % output).readdir():
-        downloads = []
+        downloads = set()
         for buildtree_inner in buildtree.readdir():
             if buildtree_inner.basename.endswith(".log"):
                 if buildtree_inner.basename.startswith("stdout"):
@@ -130,11 +129,14 @@ def _extract_downloads(rctx, output):
                         if not line.endswith(_DOWNLOAD_TRY_POSTFIX):
                             fail("Can't parse try-download line: %s" % line)
 
-                        downloads.append(line[len(_DOWNLOAD_TRY_PREFIX):-len(_DOWNLOAD_TRY_POSTFIX)].strip())
+                        downloads.add(line[len(_DOWNLOAD_TRY_PREFIX):-len(_DOWNLOAD_TRY_POSTFIX)].strip())
 
                 rctx.delete(buildtree_inner)
 
-        result[buildtree.basename] = downloads
+        if buildtree.basename in result:
+            result[buildtree.basename] |= downloads
+        else:
+            result[buildtree.basename] = downloads
 
     return result
 
@@ -156,9 +158,9 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [ -f "collect_assets/${sha512}" ]; then
-    mv "collect_assets/${sha512}" "${dst}"
+    ln "collect_assets/${sha512}" "${dst}"
 else
-    echo "${url},${sha512}" >> collect_assets.csv
+    echo "${url} ${sha512}" >> collect_assets.csv
 fi
 """
 
@@ -166,7 +168,6 @@ def _download_deps(rctx, output):
     full_path = str(rctx.path(output))
 
     rctx.file("collect_assets.sh", _COLLECT_ASSETS_SH, executable = True)
-    rctx.file("collect_assets.csv", "", executable = False)
 
     install_args = [
         "--only-downloads",
@@ -181,29 +182,45 @@ def _download_deps(rctx, output):
         ]),
     ]
 
-    # Call `install --only-downloads` jsut to collect csv with urls and sha512
-    vcpkg_exec(rctx, "install", install_args, output)
+    downloads = {}
 
-    # Actually download assets
-    for url, sha512 in [
-        line.split(",")
-        for line in (rctx.read("collect_assets.csv").split("\n"))
-        if line
-    ]:
-        rctx.download(
-            url = url,
-            output = "collect_assets/%s" % sha512,
-            integrity = "sha512-%s" % base64_encode_hexstr(sha512),
-        )
+    # Just some number of iterations as a hack, should finish early
+    for i in range(16):
+        if i == 15:
+            fail("\n".join([
+                "We ran 'vcpkg install --only-downloads' to collect downloads 15 times,",
+                "but didn't collect all, probably we are in corrupted state",
+            ]))
 
-    # Call `install --only-downloads` again, but now must have downloads in place
-    vcpkg_exec(rctx, "install", install_args, output)
+        rctx.file("collect_assets.csv", "", executable = False)
+
+        # Call `install --only-downloads` jsut to collect csv with urls and sha512
+        vcpkg_exec(rctx, "install", install_args, output)
+        if i:
+            _extract_downloads(rctx, downloads, output)
+
+        to_download = [
+            line.split(" ")
+            for line in rctx.read("collect_assets.csv").split("\n")
+            if line
+        ]
+        if not to_download:
+            # After last `install --only-downloads` we must have downloads in place
+            break
+
+        # Actually download assets
+        for url, sha512 in to_download:
+            rctx.download(
+                url = url,
+                output = "collect_assets/%s" % sha512,
+                integrity = "sha512-%s" % base64_encode_hexstr(sha512),
+            )
 
     rctx.delete("collect_assets.sh")
     rctx.delete("collect_assets.csv")
     rctx.delete("collect_assets")
 
-    return _extract_downloads(rctx, output)
+    return downloads
 
 def _format_inner_list(deps, pattern):
     if not deps:
