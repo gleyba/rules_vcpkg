@@ -80,6 +80,10 @@ INFO: Running command line: bazel-bin/hello_fmt
 Hello FMT!
 ```
 
+## License
+
+Adopted [ABRMS-license.md](https://github.com/ErikMcClure/bad-licenses/blob/master/ABRMS-license.md) for now, will change to Apache 2 or MIT once somewhat anyhow ready.
+
 ## Done and Upcoming work
 
 - Test more sophisticated packages with complex transitive dependencies structure:
