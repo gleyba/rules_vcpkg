@@ -28,7 +28,7 @@ def vcpkg_exec(rctx, cmd, args, workdir):
         "VCPKG_DEFAULT_BINARY_CACHE": "%s/cache" % full_path,
         "VCPKG_ROOT": "%s/vcpkg" % full_path,
         "VCPKG_DOWNLOADS": "%s/vcpkg/downloads" % full_path,
-        "VCPKG_OVERLAY_TRIPLETS": "%s/overlay_triplets" % workdir,
+        "VCPKG_OVERLAY_TRIPLETS": "%s/overlay_triplets" % full_path,
     }
 
     vcpkg_args = [
