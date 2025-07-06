@@ -57,6 +57,7 @@ vcpkg_build(
     port = "@vcpkg//vcpkg/ports:{package}",
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
     downloads = "@vcpkg//vcpkg/downloads:{package}",
+    package_features = [{features}],
     deps = [{build_deps}],
     cpus = "{cpus}",
 )
@@ -233,15 +234,8 @@ def _format_inner_list(deps, pattern):
 
     return "\n" + "\n".join(result) + "\n    "
 
-def _bootstrap(rctx, output, release, sha256, packages):
+def _bootstrap(rctx, output, packages):
     pu = platform_utils(rctx)
-
-    rctx.download_and_extract(
-        url = "https://github.com/microsoft/vcpkg/archive/refs/tags/%s.tar.gz" % release,
-        output = "%s/vcpkg" % output,
-        strip_prefix = "vcpkg-%s" % release,
-        sha256 = sha256,
-    )
 
     tool_meta = {
         line.split("=")[0]: line.split("=")[1]
@@ -293,11 +287,12 @@ def _bootstrap(rctx, output, release, sha256, packages):
         packages = "\n".join([
             _VCPKG_PACKAGE_TPL.format(
                 package = package,
-                build_deps = _format_inner_list(deps, ":%s_build"),
-                lib_deps = _format_inner_list(deps, ":%s"),
+                features = _format_inner_list(info.features, "%s"),
+                build_deps = _format_inner_list(info.deps, ":%s_build"),
+                lib_deps = _format_inner_list(info.deps, ":%s"),
                 cpus = "1" if not package in packages else packages[package],
             )
-            for package, deps in depend_info.items()
+            for package, info in depend_info.items()
         ]),
     ))
 
@@ -322,11 +317,26 @@ def _bootstrap(rctx, output, release, sha256, packages):
     ]))
 
 def _bootrstrap_impl(rctx):
+    if rctx.attr.release:
+        rctx.download_and_extract(
+            url = "https://github.com/microsoft/vcpkg/archive/refs/tags/%s.tar.gz" % rctx.attr.release,
+            output = "vcpkg",
+            strip_prefix = "vcpkg-%s" % rctx.attr.release,
+            sha256 = rctx.attr.sha256,
+        )
+    elif rctx.attr.commit:
+        rctx.download_and_extract(
+            url = "https://github.com/microsoft/vcpkg/archive/%s.zip" % rctx.attr.commit,
+            output = "vcpkg",
+            strip_prefix = "vcpkg-%s" % rctx.attr.commit,
+            sha256 = rctx.attr.sha256,
+        )
+    else:
+        fail("No 'release' or 'commit' argument specified, either one needed to bootstrap vcpkg")
+
     _bootstrap(
         rctx,
         output = ".",
-        release = rctx.attr.release,
-        sha256 = rctx.attr.sha256,
         packages = rctx.attr.packages,
     )
 
@@ -334,8 +344,10 @@ bootstrap = repository_rule(
     implementation = _bootrstrap_impl,
     attrs = {
         "release": attr.string(
-            mandatory = True,
-            doc = "The vcpkg version",
+            doc = "The vcpkg version, either this or commit must be specified",
+        ),
+        "commit": attr.string(
+            doc = "The vcpkg commit, either this of version must be specified",
         ),
         "packages": attr.string_dict(
             mandatory = True,

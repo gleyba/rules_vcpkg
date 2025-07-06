@@ -9,11 +9,22 @@ def collect_depend_info(rctx, workdir, packages):
 
         package_info_raw_parts = package_info_raw.split(": ")
         package = package_info_raw_parts[0]
-        flavoured = package.find("[")
-        if flavoured != -1:
-            package = package[0:flavoured]
+        features_list = []
+        features_start = package.find("[")
+        if features_start != -1:
+            if package[-1] != "]":
+                fail("Can't parse features from: %s" % package)
+
+            features_list = [
+                f.strip()
+                for f in package[features_start + 1:-1].split(",")
+            ]
+            package = package[0:features_start]
 
         deps_list = package_info_raw_parts[1].split(", ") if package_info_raw_parts[1] else []
-        result[package] = deps_list
+        result[package] = struct(
+            features = features_list,
+            deps = deps_list,
+        )
 
     return result

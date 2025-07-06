@@ -1,13 +1,15 @@
 load("//vcpkg:vcpkg.bzl", "vcpkg_package")
-load("//vcpkg/bootstrap:bootstrap.bzl", _bootstrap = "bootstrap")
+load("//vcpkg/bootstrap:bootstrap.bzl", call_bootstrap = "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
+load("//vcpkg/bootstrap/macos:macos.bzl", _macos = "macos")
 
-bootstrap = tag_class(attrs = {
-    "release": attr.string(doc = "The vcpkg version"),
+_bootstrap = tag_class(attrs = {
+    "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
+    "commit": attr.string(doc = "The vcpkg commit, either this or version must be specified"),
     "sha256": attr.string(doc = "Shasum of vcpkg"),
 })
 
-install = tag_class(attrs = {
+_install = tag_class(attrs = {
     "package": attr.string(doc = "Package to install"),
     "cpus": attr.string(
         default = "1",
@@ -38,9 +40,10 @@ def _vcpkg(mctx):
 
     mctx.report_progress("Bootstrapping vcpkg release: %s" % cur_bootstrap.release)
 
-    _bootstrap(
+    call_bootstrap(
         name = "vcpkg",
         release = cur_bootstrap.release,
+        commit = cur_bootstrap.commit,
         sha256 = cur_bootstrap.sha256,
         packages = packages,
     )
@@ -54,11 +57,13 @@ def _vcpkg(mctx):
 vcpkg = module_extension(
     implementation = _vcpkg,
     tag_classes = {
-        "bootstrap": bootstrap,
-        "install": install,
+        "bootstrap": _bootstrap,
+        "install": _install,
     },
 )
 
 vcpkg_external = module_extension(
     implementation = lambda _: bootstrap_toolchains(name = "vcpkg_external"),
 )
+
+macos = _macos

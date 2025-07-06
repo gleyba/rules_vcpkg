@@ -114,6 +114,15 @@ def _vcpkg_build_impl(ctx):
     package_output_dir = ctx.actions.declare_directory(package_output_dir_path)
 
     call_vcpkg_wrapper = ctx.actions.declare_file("call_vcpkg_%s.sh" % ctx.attr.name)
+
+    if ctx.attr.package_features:
+        build_target_name = "%s[%s]" % (
+            ctx.attr.package_name,
+            ",".join(ctx.attr.package_features),
+        )
+    else:
+        build_target_name = ctx.attr.package_name
+
     ctx.actions.expand_template(
         template = ctx.file._call_vcpkg_wrapper_tpl,
         output = call_vcpkg_wrapper,
@@ -126,12 +135,13 @@ def _vcpkg_build_impl(ctx):
             "__install_dir_path__": install_dir.path,
             "__packages_list_file__": packages_list_file.path,
             "__package_name__": ctx.attr.package_name,
+            "__build_target_name__": build_target_name,
             "__vcpkg_root__": vcpkg_root,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
             "__downloads_root__": "%s/downloads" % vcpkg_root,
             "__install_root__": install_dir.path,
             "__packages_root__": paths.dirname(package_output_dir.path),
-            "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
+            # "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
             "__overlay_tripplets__": _commonprefix([
                 ot.path
                 for ot in overlay_triplets
@@ -156,7 +166,7 @@ def _vcpkg_build_impl(ctx):
         ],
         executable = call_vcpkg_wrapper,
         env = {
-            "VCPKG_MAX_CONCURRENCY": cpus,
+            # "VCPKG_MAX_CONCURRENCY": cpus,
             "VCPKG_DEBUG": "1",
         },
         execution_requirements = {
@@ -185,6 +195,7 @@ vcpkg_build = rule(
         "port": attr.label(allow_files = True),
         "buildtree": attr.label(allow_files = True),
         "downloads": attr.label(allow_files = True),
+        "package_features": attr.string_list(),
         "deps": attr.label_list(providers = [
             VcpkgBuiltPackageInfo,
             VcpkgPackageDepsInfo,

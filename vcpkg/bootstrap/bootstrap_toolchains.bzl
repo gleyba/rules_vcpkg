@@ -161,7 +161,14 @@ def _bootstrap_toolchains_impl(rctx):
                 strip_prefix = "libtool",
             )
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/m4.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/bison.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/flex.zip"))
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/make.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/autoconf_archive.zip"))
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:arm64/pkgconfig.zip"),
+                strip_prefix = "pkgconfig",
+            )
         else:
             fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
     else:
@@ -182,9 +189,12 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/cmp", "bin/cmp")
     rctx.symlink("/usr/bin/awk", "bin/awk")
     rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
+    rctx.symlink("/usr/bin/find", "bin/find")
 
     # rctx.symlink("/usr/bin/python3", "bin/python3")
+    rctx.symlink("/usr/sbin/zic", "bin/zic")
     rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
+    # rctx.symlink("/opt/homebrew/bin/pkg-config", "bin/pkg-config")
     # rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 
     if rctx.os.name.startswith("mac"):
@@ -196,6 +206,7 @@ def _bootstrap_toolchains_impl(rctx):
         # rctx.symlink("/usr/bin/libtool", "bin/libtool")
         rctx.symlink("/usr/bin/ranlib", "bin/ranlib")
         rctx.symlink("/usr/bin/ar", "bin/ar")
+        rctx.symlink("/usr/bin/lipo", "bin/lipo")
 
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")

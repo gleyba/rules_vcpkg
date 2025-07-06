@@ -1,7 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+# cc_binary(
+#     name = "hello",
+#     srcs = ["hello.cpp"],
+#     deps = ["@vcpkg_qt//:qt"],
+# )
+
 cc_binary(
     name = "hello",
     srcs = ["hello.cpp"],
-    deps = ["@vcpkg_libxml2//:libxml2"],
+    deps = [
+        "@vcpkg_qtbase//:qtbase",
+    ],
 )

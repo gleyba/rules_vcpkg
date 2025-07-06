@@ -10,9 +10,15 @@ local_path_override(
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
-    release = "2025.06.13",
-    sha256 = "ea2d0f029331ef0f58cb2d87c5e3f2c4606d927c63dc81d56d81a632f3dca45d",
+    commit = "9e8416f15d93fa9347e3291bd8c128dd44200ba5",
+    sha256 = "54aa9cc47ce67cc35664eb9ad455f9201d749d008d89c95072621b78f96d48ed",
 )
+
+macos = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "macos")
+macos.sdk(version = "15.5")
+use_repo(macos, "macos_sdk")
+
+register_toolchains("@macos_sdk//:toolchain")
 
 # vcpkg.install(package = "boost-asio")
 # vcpkg.install(
@@ -44,11 +50,24 @@ vcpkg.bootstrap(
 #     "vcpkg_qt",
 # )
 
-vcpkg.install(package = "libxml2")
+# vcpkg.install(
+#     package = "qt",
+#     cpus = "HOST_CPUS",
+# )
+# use_repo(
+#     vcpkg,
+#     "vcpkg",
+#     "vcpkg_qt",
+# )
+
+vcpkg.install(
+    cpus = "HOST_CPUS",
+    package = "qtbase",
+)
 use_repo(
     vcpkg,
     "vcpkg",
-    "vcpkg_libxml2",
+    "vcpkg_qtbase",
 )
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")

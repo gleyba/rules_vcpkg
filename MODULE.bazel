@@ -22,17 +22,3 @@ register_toolchains("@vcpkg_external//:vcpkg_external_toolchain")
 register_toolchains("//vcpkg/toolchain:current_toolchain")
 
 bazel_dep(name = "buildifier_prebuilt", version = "8.0.3", dev_dependency = True)
-
-# vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
-# vcpkg.bootstrap(
-#     release = "2025.04.09",
-#     sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
-# )
-
-# vcpkg.install(package = "fmt")
-
-# use_repo(
-#     vcpkg,
-#     "vcpkg",
-#     "vcpkg_fmt",
-# )

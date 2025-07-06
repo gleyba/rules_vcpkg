@@ -141,7 +141,7 @@ int main(int argc, char ** argv) {
 
     fs::path buildtrees_root { argv[3] };
     fs::path buildtrees_tmp { argv[4] };
-    prepare_build_root(buildtrees_root, buildtrees_tmp);
+    // prepare_build_root(buildtrees_root, buildtrees_tmp);
 
     return 0;
 }

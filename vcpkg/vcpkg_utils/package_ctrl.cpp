@@ -34,8 +34,20 @@ package_control_t read_package_control(const fs::path& package_output_dir) {
     std::vector<std::string> status_data;
 
     std::string line;
+
+    bool is_in_description = false;
     while (std::getline(control_ifs, line)) {
         if (line.empty()) {
+            is_in_description = false;
+            continue;
+        }
+
+        if (is_in_description) {
+            continue;
+        }
+
+        if (line.find("Description: ") == 0) {
+            is_in_description = true;
             continue;
         }
 
