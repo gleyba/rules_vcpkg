@@ -1,17 +1,13 @@
-load("@buildifier_prebuilt//:rules.bzl", "buildifier")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
-buildifier(
-    name = "buildifier",
-    exclude_patterns = [
-        "./.git/*",
-    ],
+bool_flag(
+    name = "debug",
+    build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
-buildifier(
-    name = "buildifier.check",
-    exclude_patterns = [
-        "./.git/*",
-    ],
-    lint_mode = "warn",
-    mode = "diff",
+bool_flag(
+    name = "debug_reuse_outputs",
+    build_setting_default = False,
+    visibility = ["//visibility:public"],
 )

@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 VcpkgBuiltPackageInfo = provider(
     doc = "Vcpkg built package info",
@@ -57,8 +58,6 @@ def _vcpkg_build_impl(ctx):
         ),
     )
 
-    install_dir = ctx.actions.declare_directory("%s/install" % ctx.attr.name)
-
     deps_list = deps_info.deps.to_list()
     deps_outputs = [
         dep_info.output
@@ -106,7 +105,7 @@ def _vcpkg_build_impl(ctx):
 
     vcpkg_root = "%s/vcpkg" % paths.dirname(vcpkg_info.vcpkg_tool.path)
 
-    package_output_dir_path = "{name}/packages/{name}_{triplet}".format(
+    package_output_dir_path = "packages/{name}_{triplet}".format(
         name = ctx.attr.package_name,
         triplet = vcpkg_current_info.triplet,
     )
@@ -132,15 +131,14 @@ def _vcpkg_build_impl(ctx):
             "__cur_bin_dir__": cur_bin_dir,
             "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
             "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
-            "__install_dir_path__": install_dir.path,
             "__packages_list_file__": packages_list_file.path,
             "__package_name__": ctx.attr.package_name,
             "__build_target_name__": build_target_name,
             "__vcpkg_root__": vcpkg_root,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
             "__downloads_root__": "%s/downloads" % vcpkg_root,
-            "__install_root__": install_dir.path,
-            "__packages_root__": paths.dirname(package_output_dir.path),
+            "__package_output_dir__": paths.dirname(package_output_dir.path),
+            "__package_output_basename__": paths.basename(package_output_dir.path),
             # "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
             "__overlay_tripplets__": _commonprefix([
                 ot.path
@@ -153,6 +151,10 @@ def _vcpkg_build_impl(ctx):
         ctx.attr.cpus,
         vcpkg_info.host_cpu_count,
     )
+
+    is_debug = ctx.attr._debug[BuildSettingInfo].value
+    is_debug_reuse_outputs = ctx.attr._debug_reuse_outputs[BuildSettingInfo].value
+
     ctx.actions.run(
         tools = [
             vcpkg_info.vcpkg_tool,
@@ -160,14 +162,12 @@ def _vcpkg_build_impl(ctx):
             ctx.executable._prepare_install_dir,
         ],
         inputs = inputs,
-        outputs = [
-            install_dir,
-            package_output_dir,
-        ],
+        outputs = [package_output_dir],
         executable = call_vcpkg_wrapper,
         env = {
-            # "VCPKG_MAX_CONCURRENCY": cpus,
-            "VCPKG_DEBUG": "1",
+            "VCPKG_MAX_CONCURRENCY": cpus,
+            "VCPKG_DEBUG": str(int(is_debug)),
+            "VCPKG_DEBUG_REUSE_OUTPUTS": str(int(is_debug and is_debug_reuse_outputs)),
         },
         execution_requirements = {
             "resources:cpu:%s" % cpus: "",
@@ -176,7 +176,6 @@ def _vcpkg_build_impl(ctx):
 
     return [
         DefaultInfo(files = depset([
-            install_dir,
             package_output_dir,
         ])),
         VcpkgBuiltPackageInfo(
@@ -214,6 +213,14 @@ vcpkg_build = rule(
             executable = True,
             cfg = "exec",
             doc = "Tool to prepare vcpkg install directory structure",
+        ),
+        "_debug": attr.label(
+            providers = [BuildSettingInfo],
+            default = "//:debug",
+        ),
+        "_debug_reuse_outputs": attr.label(
+            providers = [BuildSettingInfo],
+            default = "//:debug_reuse_outputs",
         ),
     },
     toolchains = [

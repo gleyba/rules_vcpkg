@@ -340,6 +340,9 @@ def _bootrstrap_impl(rctx):
         packages = rctx.attr.packages,
     )
 
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = True)
+
 bootstrap = repository_rule(
     implementation = _bootrstrap_impl,
     attrs = {

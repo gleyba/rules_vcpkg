@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <string>
 #include <vector>
 #include <fstream>
@@ -56,7 +58,8 @@ void write_listing(const fs::path& vcpkg_info_dir, const package_control_t& ctrl
 void prepare_install_dir(
     const fs::path& install_dir,
     // const fs::path& manifest_path,
-    const fs::path& packages_outputs_list_path
+    const fs::path& packages_outputs_list_path,
+    bool reuse_install_dirs
 ) {
     auto packages_ctrls = read_packages(packages_outputs_list_path);
     fs::path vcpkg_meta_dir = install_dir / "vcpkg"; 
@@ -89,7 +92,13 @@ void prepare_install_dir(
                 fs::create_directories(install_path);
             } else {
                 // fs::create_symlink(entry_path, install_path);
-                fs::copy_file(entry_path, install_path);
+                fs::copy_file(
+                    entry_path, 
+                    install_path,
+                    reuse_install_dirs 
+                        ? fs::copy_options::skip_existing
+                        : fs::copy_options::none
+                );
             }
         }
         
@@ -131,16 +140,18 @@ void prepare_build_root(const fs::path& buildtrees_root, const fs::path& buildtr
 }
 
 int main(int argc, char ** argv) {
-    fs::path install_dir { argv[1] };
+    fs::path buildtrees_tmp { argv[1] };
+    fs::path install_dir = buildtrees_tmp / "install";
     fs::path packages_outputs_list_path { argv[2] };
+    fs::path buildtrees_root { argv[3] };
+    bool reuse_install_dirs = strcmp(argv[4], "1") == 0;
 
     prepare_install_dir(
         install_dir, 
-        packages_outputs_list_path
+        packages_outputs_list_path,
+        reuse_install_dirs
     );
 
-    fs::path buildtrees_root { argv[3] };
-    fs::path buildtrees_tmp { argv[4] };
     // prepare_build_root(buildtrees_root, buildtrees_tmp);
 
     return 0;

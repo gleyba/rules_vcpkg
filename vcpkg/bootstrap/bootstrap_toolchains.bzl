@@ -246,6 +246,9 @@ def _bootstrap_toolchains_impl(rctx):
         ),
     )
 
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = True)
+
 bootstrap_toolchains = repository_rule(
     implementation = _bootstrap_toolchains_impl,
 )
