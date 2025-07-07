@@ -1,128 +1,30 @@
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
-# _CMAKE_BUILD_FILE = """\
-# filegroup(
-#     name = "cmake_data",
-#     srcs = glob(
-#         [ "**" ],
-#         exclude = [
-#             "WORKSPACE",
-#             "WORKSPACE.bazel",
-#             "BUILD",
-#             "BUILD.bazel",
-#             "**/* *",
-#         ],
-#     ),
-#     visibility = ["//:__pkg__"],
-# )
-# """
+_BUILD_BAZEL = """\
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 
-# _COREUTILS_BUILD_FILE = """\
-# filegroup(
-#     name = "coreutils_data",
-#     srcs = [ "coreutils" ],
-#     visibility = [ "//:__pkg__" ],
-# )
-# """
-
-# _PERL_BUILD_FILE = """\
-# filegroup(
-#     name = "perl_data",
-#     srcs = glob(["**/*"]),
-#     visibility = [ "//:__pkg__" ],
-# )
-# """
-
-# _AUTOCONF_BUILD_FILE = """\
-# filegroup(
-#     name = "autoconf_data",
-#     srcs = glob(["**/*"]),
-#     visibility = [ "//:__pkg__" ],
-# )
-# """
-
-# _AUTOMAKE_BUILD_FILE = """\
-# filegroup(
-#     name = "automake_data",
-#     srcs = glob(["**/*"]),
-#     visibility = [ "//:__pkg__" ],
-# )
-# """
-
-# _LIBTOOL_BUILD_FILE = """\
-# filegroup(
-#     name = "libtool_data",
-#     srcs = glob(["**/*"]),
-#     visibility = [ "//:__pkg__" ],
-# )
-# """
-
-VcpgExternalInfo = provider(
-    doc = "Information about external binaries used with vcpkg toolchain.",
-    fields = [
-        "binaries",
-        "transitive",
-    ],
-)
-
-def _vcpkg_external_toolchain_impl(ctx):
-    return platform_common.ToolchainInfo(
-        vcpkg_external_info = VcpgExternalInfo(
-            binaries = depset(ctx.files.binaries),
-            transitive = depset(ctx.files.transitive),
-        ),
-    )
-
-vcpkg_external_toolchain = rule(
-    implementation = _vcpkg_external_toolchain_impl,
-    attrs = {
-        "binaries": attr.label_list(
-            allow_files = True,
-            doc = "Path to the binaries",
-        ),
-        "transitive": attr.label_list(
-            allow_files = True,
-            doc = "Transitive external toolchains files",
-        ),
-    },
-)
-
-_BUILD_BAZEL_TPL = """\
-load("@rules_vcpkg//vcpkg/bootstrap:bootstrap_toolchains.bzl", "vcpkg_external_toolchain")
-
-vcpkg_external_toolchain(
-    name = "vcpkg_external",
-    binaries = glob([ "bin/**" ]),
-    transitive = glob(
-        [ "**/*" ],
-        exclude = [
-            "bin/**",
-            "**/*.bazel",
-            "**/* *",
-        ],    
+directory(
+    name = "root",
+    srcs = glob(
+        [ "**" ],
+        exclude = [ "bin/**" ],
     ),
+    visibility = ["//visibility:public"],
 )
+"""
 
-toolchain(
-    name = "vcpkg_external_toolchain",
-    exec_compatible_with = [
-        "{os}",
-        "{arch}",
-    ],
-    target_compatible_with = [
-        "{os}",
-        "{arch}",
-    ],
-    toolchain = ":vcpkg_external",
-    toolchain_type = "@rules_vcpkg//vcpkg/toolchain:external_toolchain_type",
+_BIN_BUILD_BAZEL = """\
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
+
+directory(
+    name = "bin",
+    srcs = glob([ "**" ]),
     visibility = ["//visibility:public"],
 )
 """
 
 def _bootstrap_toolchains_impl(rctx):
-    pu = platform_utils(rctx)
-
     if rctx.os.name.startswith("mac"):
         rctx.download_and_extract(
             url = "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz",
@@ -148,6 +50,12 @@ def _bootstrap_toolchains_impl(rctx):
                 strip_prefix = "perl-darwin-arm64",
                 output = "perl",
             )
+
+            # rctx.download_and_extract(
+            #     url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
+            #     sha256 = "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
+            #     strip_prefix = "python",
+            # )
             rctx.extract(
                 archive = Label("//vcpkg/bootstrap/archives:arm64/autoconf.zip"),
                 strip_prefix = "autoconf",
@@ -210,6 +118,7 @@ def _bootstrap_toolchains_impl(rctx):
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")
         rctx.symlink("/usr/bin/clang++", "bin/clang++")
+        rctx.symlink("/usr/bin/python3", "bin/python3")
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
 
@@ -243,10 +152,12 @@ def _bootstrap_toolchains_impl(rctx):
 
     rctx.file(
         "BUILD.bazel",
-        _BUILD_BAZEL_TPL.format(
-            os = pu.targets.os,
-            arch = pu.targets.arch,
-        ),
+        _BUILD_BAZEL,
+    )
+
+    rctx.file(
+        "bin/BUILD.bazel",
+        _BIN_BUILD_BAZEL,
     )
 
     if hasattr(rctx, "repo_metadata"):

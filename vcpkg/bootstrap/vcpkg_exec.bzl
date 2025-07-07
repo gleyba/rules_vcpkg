@@ -19,11 +19,12 @@ def exec_check(
         "stderr: %s" % res.stderr,
     ])
 
-def vcpkg_exec(rctx, cmd, args, workdir, tmpdir):
+def vcpkg_exec(rctx, cmd, args, workdir, tmpdir, external_bins):
     full_path = str(rctx.path(workdir))
 
     vcpkg_env = {
         # "X_VCPKG_REGISTRIES_CACHE": "%s/registries" % workdir,
+        "PATH": external_bins,
         "VCPKG_DEFAULT_BINARY_CACHE": "%s/cache" % full_path,
         "VCPKG_ROOT": "%s/vcpkg" % full_path,
         "VCPKG_DOWNLOADS": "%s/downloads" % tmpdir,

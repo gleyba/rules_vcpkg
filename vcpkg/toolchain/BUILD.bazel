@@ -7,11 +7,6 @@ toolchain_type(
 )
 
 toolchain_type(
-    name = "external_toolchain_type",
-    visibility = ["//visibility:public"],
-)
-
-toolchain_type(
     name = "current_toolchain_type",
     visibility = ["//visibility:public"],
 )

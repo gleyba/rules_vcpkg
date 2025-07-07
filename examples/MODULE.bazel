@@ -38,7 +38,6 @@ register_toolchains("@macos_sdk//:toolchain")
 #     "vcpkg_qt",
 # )
 
-vcpkg.install(package = "qt")
 vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "openssl",
@@ -113,10 +112,25 @@ vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "qtquick3d",
 )
+vcpkg.configure(
+    package = "vcpkg-get-python-packages",
+    port_patches = [
+        "//hello_qt:x_vcpkg_get_python_packages.patch",
+    ],
+)
+
+# vcpkg.install(package = "qt")
+# use_repo(
+#     vcpkg,
+#     "vcpkg",
+#     "vcpkg_qt",
+# )
+
+vcpkg.install(package = "mesa")
 use_repo(
     vcpkg,
     "vcpkg",
-    "vcpkg_qt",
+    "vcpkg_mesa",
 )
 
 register_toolchains("@vcpkg//:vcpkg_toolchain")

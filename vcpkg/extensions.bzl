@@ -26,6 +26,9 @@ Helpful to copy some missing config files from ports directory to install one.
 Environment variables 'PORT_DIR' and `INSTALL_DIR` will be available.
 """,
     ),
+    "port_patches": attr.label_list(
+        doc = "Patches to apply to package port",
+    ),
 })
 
 def _vcpkg(mctx):
@@ -33,6 +36,7 @@ def _vcpkg(mctx):
     packages = set()
     packages_cpus = {}
     packages_repo_fixups = {}
+    packages_ports_patches = {}
     for mod in mctx.modules:
         for bootstrap in mod.tags.bootstrap:
             if cur_bootstrap:
@@ -58,8 +62,14 @@ def _vcpkg(mctx):
                 else:
                     packages_repo_fixups[configure.package] = configure.repo_fixups
 
+            for patch in configure.port_patches:
+                packages_ports_patches[patch] = configure.package
+
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
+
+    # mctx.report_progress("Bootstrapping external toolchains")
+    # bootstrap_toolchains(name = "vcpkg_external")
 
     mctx.report_progress("Bootstrapping vcpkg release: %s" % cur_bootstrap.release)
 
@@ -71,6 +81,8 @@ def _vcpkg(mctx):
         packages = list(packages),
         packages_cpus = packages_cpus,
         packages_repo_fixups = packages_repo_fixups,
+        packages_ports_patches = packages_ports_patches,
+        external_bins = "@vcpkg_external//bin",
     )
 
     for package in packages:

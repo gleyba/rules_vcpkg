@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//vcpkg/bootstrap:collect_depend_info.bzl", "collect_depend_info")
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
 load("//vcpkg/toolchain:current_toolchain.bzl", "DEFAULT_TRIPLET_SETS", "format_additions")
@@ -29,7 +30,7 @@ SCRIPT_DIR=$(dirname "$0")
 exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
-def _initialize(rctx, output, packages, pu):
+def _initialize(rctx, output, packages, packages_ports_patches, pu):
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
@@ -54,6 +55,19 @@ def _initialize(rctx, output, packages, pu):
             DEFAULT_TRIPLET_SETS,
         ),
     )
+
+    for patch_file, package in packages_ports_patches.items():
+        patch(
+            rctx,
+            patches = [patch_file],
+            patch_args = [
+                "-d",
+                "%s/vcpkg/ports/%s" % (
+                    output,
+                    package,
+                ),
+            ],
+        )
 
 _DOWNLOAD_TRY_PREFIX = "Trying to download "
 _DOWNLOAD_TRY_POSTFIX = " using asset cache script"
@@ -138,7 +152,7 @@ else
 fi
 """
 
-def _download_deps(rctx, output, tmpdir):
+def _download_deps(rctx, output, tmpdir, external_bins):
     full_path = str(rctx.path(output))
 
     rctx.file("collect_assets.sh", _COLLECT_ASSETS_SH, executable = True)
@@ -163,7 +177,7 @@ def _download_deps(rctx, output, tmpdir):
         rctx.file("collect_assets.csv", "", executable = False)
 
         # Call `install --only-downloads` jsut to collect csv with urls and sha512
-        _, err = vcpkg_exec(rctx, "install", install_args, output, tmpdir)
+        _, err = vcpkg_exec(rctx, "install", install_args, output, tmpdir, external_bins)
         if err:
             return None, err
 
@@ -363,22 +377,24 @@ def _bootstrap(
         rctx,
         output,
         tmpdir,
+        external_bins,
         packages,
+        packages_ports_patches,
         packages_cpus,
         packages_repo_fixups):
     pu = platform_utils(rctx)
 
     _download_vcpkg_tool(rctx, output, pu)
 
-    _initialize(rctx, output, packages, pu)
+    _initialize(rctx, output, packages, packages_ports_patches, pu)
 
     _perform_fixups(rctx, output, tmpdir, packages_repo_fixups, pu)
 
-    downloads_per_package, err = _download_deps(rctx, output, tmpdir)
+    downloads_per_package, err = _download_deps(rctx, output, tmpdir, external_bins)
     if err:
         return err
 
-    depend_info, err = collect_depend_info(rctx, output, tmpdir, packages)
+    depend_info, err = collect_depend_info(rctx, output, tmpdir, external_bins, packages)
     if err:
         return err
 
@@ -394,6 +410,8 @@ def _bootstrap(
     return None
 
 def _bootrstrap_impl(rctx):
+    external_bins = paths.dirname(str(rctx.path(rctx.attr.external_bins)))
+
     if rctx.attr.release:
         rctx.download_and_extract(
             url = "https://github.com/microsoft/vcpkg/archive/refs/tags/%s.tar.gz" % rctx.attr.release,
@@ -427,9 +445,11 @@ def _bootrstrap_impl(rctx):
         rctx,
         output = ".",
         tmpdir = tmpdir,
+        external_bins = external_bins,
         packages = rctx.attr.packages,
         packages_cpus = rctx.attr.packages_cpus,
         packages_repo_fixups = rctx.attr.packages_repo_fixups,
+        packages_ports_patches = rctx.attr.packages_ports_patches,
     )
 
     rctx.delete(tmpdir)
@@ -456,16 +476,23 @@ bootstrap = repository_rule(
             doc = "Packages to install",
         ),
         "packages_cpus": attr.string_dict(
-            mandatory = True,
+            mandatory = False,
             doc = "Packages build assigned cpu count",
         ),
         "packages_repo_fixups": attr.string_list_dict(
-            mandatory = True,
+            mandatory = False,
             doc = "Packages fixup bash script lines",
+        ),
+        "packages_ports_patches": attr.label_keyed_string_dict(
+            mandatory = False,
+            doc = "Patches to apply to port directory",
         ),
         "sha256": attr.string(
             mandatory = False,
             doc = "SHA256 sum of release archive",
+        ),
+        "external_bins": attr.label(
+            mandatory = True,
         ),
     },
 )

@@ -106,7 +106,46 @@ void prepare_install_dir(
     }
 }
 
-void prepare_build_root(const fs::path& buildtrees_root, const fs::path& buildtrees_tmp) {
+void copy_sources(
+    const fs::path& src,
+    const fs::path& dst,
+    bool reuse_install_dirs
+) {
+    fs::create_directories(dst);
+
+    for (const auto& buildtree_entry: fs::directory_iterator {src}) {
+        auto buildtree_entry_path = buildtree_entry.path();
+        auto relative_path = buildtree_entry_path.lexically_relative(src);
+        auto dst_builtree_path = dst / relative_path;
+        if (buildtree_entry.is_directory()) {
+            copy_sources(
+                buildtree_entry_path,
+                dst_builtree_path,
+                reuse_install_dirs
+            );
+        } else {
+            fs::copy_file(
+                buildtree_entry_path, 
+                dst_builtree_path,
+                reuse_install_dirs
+                    ? fs::copy_options::update_existing
+                    : fs::copy_options::none
+            );
+        }
+    }
+}
+
+bool ends_with(const std::string& s, const std::string& suffix) {
+    return s.rfind(suffix) == (s.size() - suffix.size());
+}
+
+const std::string s_venv_postfix = "-venv";
+
+void prepare_build_root(
+    const fs::path& buildtrees_root, 
+    const fs::path& buildtrees_tmp,
+    bool reuse_install_dirs
+) {
     for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
         fs::path src_path = package_buildtree_entry.path() / "src";
         
@@ -115,27 +154,16 @@ void prepare_build_root(const fs::path& buildtrees_root, const fs::path& buildtr
         }
 
         for (const auto& src_entry: fs::directory_iterator {src_path}) {
-            if (src_entry.path().extension() != ".clean") {
-                continue;
-            }
-
             fs::path src = src_entry.path();
-            fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
-            dst.replace_extension("");
-            fs::create_directories(dst);
-
-            for (const auto& buildtree_entry: fs::recursive_directory_iterator {src}) {
-                auto buildtree_entry_path = buildtree_entry.path();
-                auto relative_path = buildtree_entry_path.lexically_relative(src);
-                auto dst_builtree_path = dst / relative_path;
-                if (buildtree_entry.is_directory()) {
-                    fs::create_directories(dst_builtree_path);
-                } else {
-                    fs::copy_file(buildtree_entry_path, dst_builtree_path);
-                }
+            if (src.extension() == ".clean") {
+                fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
+                dst.replace_extension("");
+                copy_sources(src, dst, reuse_install_dirs);
+            } else if (ends_with(src.string(), s_venv_postfix)) {
+                fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
+                copy_sources(src, dst, reuse_install_dirs);
             }
         }
-
     }
 }
 
@@ -152,7 +180,11 @@ int main(int argc, char ** argv) {
         reuse_install_dirs
     );
 
-    // prepare_build_root(buildtrees_root, buildtrees_tmp);
+    prepare_build_root(
+        buildtrees_root, 
+        buildtrees_tmp,
+        reuse_install_dirs
+    );
 
     return 0;
 }

@@ -3,7 +3,7 @@
 set -eu
 
 export HOME=/tmp/home
-export PATH="${PWD}/__bin_dir__:${PWD}/__cur_bin_dir__" # ":/usr/bin:/bin"
+export PATH="${PWD}/__bin_dir__" #  ":${PWD}/__cur_bin_dir__:/usr/bin:/bin"
 
 export VCPKG_EXEC_ROOT="${PWD}"
 # export CC="__cxx_compiler__"

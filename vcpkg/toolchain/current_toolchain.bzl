@@ -64,20 +64,6 @@ def _current_toolchain_impl(ctx):
     binaries = []
     transitive_depsets = []
 
-    py_toolchain = ctx.toolchains["@rules_python//python:toolchain_type"]
-    if not py_toolchain.py3_runtime:
-        fail("No PY3 runtime defined")
-
-    # python3 = ctx.actions.declare_file("bin/python3")
-    # ctx.actions.symlink(
-    #     output = python3,
-    #     target_file = py_toolchain.py3_runtime.interpreter,
-    #     is_executable = True,
-    # )
-
-    binaries.append(py_toolchain.py3_runtime.interpreter)
-    transitive_depsets.append(py_toolchain.py3_runtime.files)
-
     # TODO: Setup chainload file for resolved C++ toolchain
     # cc_compiler_str = None
     # cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
@@ -178,7 +164,7 @@ current_toolchain = rule(
         ),
     },
     toolchains = [
-        "@rules_python//python:toolchain_type",
+        # "@rules_python//python:toolchain_type",
         # "@rules_cc//cc:toolchain_type",
         config_common.toolchain_type(
             "//vcpkg/bootstrap/macos:sdk_toolchain_type",
