@@ -91,14 +91,14 @@ void prepare_install_dir(
             if (dir_entry.is_directory()) {
                 fs::create_directories(install_path);
             } else {
-                // fs::create_symlink(entry_path, install_path);
-                fs::copy_file(
-                    entry_path, 
-                    install_path,
-                    reuse_install_dirs 
-                        ? fs::copy_options::skip_existing
-                        : fs::copy_options::none
-                );
+                if (fs::exists(install_path)) {
+                    if (reuse_install_dirs) {
+                        continue;
+                    }
+                    throw std::runtime_error("File at path '" + relative_path.string() + "' already exists in install dir");
+                }
+
+                fs::create_symlink(fs::absolute(entry_path), install_path);
             }
         }
         

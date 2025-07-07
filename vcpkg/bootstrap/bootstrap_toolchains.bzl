@@ -191,10 +191,8 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
     rctx.symlink("/usr/bin/find", "bin/find")
 
-    # rctx.symlink("/usr/bin/python3", "bin/python3")
     rctx.symlink("/usr/sbin/zic", "bin/zic")
     rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
-    # rctx.symlink("/opt/homebrew/bin/pkg-config", "bin/pkg-config")
     # rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 
     if rctx.os.name.startswith("mac"):
@@ -202,6 +200,7 @@ def _bootstrap_toolchains_impl(rctx):
         rctx.symlink("/usr/bin/otool", "bin/otool")
         rctx.symlink("/usr/bin/file", "bin/file")
         rctx.symlink("/usr/bin/install_name_tool", "bin/install_name_tool")
+        rctx.symlink("/usr/bin/codesign", "bin/codesign")
 
         # rctx.symlink("/usr/bin/libtool", "bin/libtool")
         rctx.symlink("/usr/bin/ranlib", "bin/ranlib")
@@ -220,7 +219,11 @@ def _bootstrap_toolchains_impl(rctx):
     symlink_rel("../cmake/bin/cmake", "bin/cmake")
     symlink_rel("../perl/bin/perl", "bin/perl")
 
-    for coretool in exec_check(rctx, "list coreutils", ["coreutils/coreutils", "--list"]).stdout.split("\n"):
+    coretools_res, err = exec_check(rctx, "list coreutils", ["coreutils/coreutils", "--list"])
+    if err:
+        fail(err)
+
+    for coretool in coretools_res.stdout.split("\n"):
         coretool = coretool.strip()
         if coretool in ["[", ""]:
             continue
@@ -248,6 +251,8 @@ def _bootstrap_toolchains_impl(rctx):
 
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(reproducible = True)
+    else:
+        return None
 
 bootstrap_toolchains = repository_rule(
     implementation = _bootstrap_toolchains_impl,

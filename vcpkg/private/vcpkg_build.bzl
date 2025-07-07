@@ -103,7 +103,8 @@ def _vcpkg_build_impl(ctx):
         for item in sublist
     ]
 
-    vcpkg_root = "%s/vcpkg" % paths.dirname(vcpkg_info.vcpkg_tool.path)
+    vcpkg_repo_root = paths.dirname(vcpkg_info.vcpkg_tool.path)
+    vcpkg_root = "%s/vcpkg" % vcpkg_repo_root
 
     package_output_dir_path = "packages/{name}_{triplet}".format(
         name = ctx.attr.package_name,
@@ -136,7 +137,7 @@ def _vcpkg_build_impl(ctx):
             "__build_target_name__": build_target_name,
             "__vcpkg_root__": vcpkg_root,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
-            "__downloads_root__": "%s/downloads" % vcpkg_root,
+            "__downloads_root__": "%s/downloads" % vcpkg_repo_root,
             "__package_output_dir__": paths.dirname(package_output_dir.path),
             "__package_output_basename__": paths.basename(package_output_dir.path),
             # "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
@@ -172,6 +173,7 @@ def _vcpkg_build_impl(ctx):
         execution_requirements = {
             "resources:cpu:%s" % cpus: "",
         },
+        mnemonic = "VCPKGBuild",
     )
 
     return [

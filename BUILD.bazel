@@ -1,11 +1,15 @@
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
+# If set, will print VCPKG output for packages build.
+# Also will initialize build tree in `/tmp/vcpkg/builtrees/<package_name>` dir
 bool_flag(
     name = "debug",
     build_setting_default = False,
     visibility = ["//visibility:public"],
 )
 
+# If set and build outputs exist in `/tmp/vcpkg/builtrees/<package_name>` dir,
+# will reuse these outputs instead of running build.
 bool_flag(
     name = "debug_reuse_outputs",
     build_setting_default = False,

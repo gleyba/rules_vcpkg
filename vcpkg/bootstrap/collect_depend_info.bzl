@@ -1,7 +1,11 @@
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "vcpkg_exec")
 
-def collect_depend_info(rctx, workdir, packages):
-    info_raw = vcpkg_exec(rctx, "depend-info", packages, workdir).stderr
+def collect_depend_info(rctx, workdir, tmpdir, packages):
+    res, err = vcpkg_exec(rctx, "depend-info", packages, workdir, tmpdir)
+    if err:
+        return None, err
+
+    info_raw = res.stderr
     result = {}
     for package_info_raw in info_raw.split("\n"):
         if not package_info_raw:
@@ -27,4 +31,4 @@ def collect_depend_info(rctx, workdir, packages):
             deps = deps_list,
         )
 
-    return result
+    return result, None

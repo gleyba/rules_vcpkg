@@ -1,4 +1,4 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
+# load("@bazel_skylib//lib:paths.bzl", "paths")
 
 DEFAULT_TRIPLET_SETS = {
     "X_VCPKG_BUILD_GNU_LIBICONV": "1",
@@ -68,14 +68,14 @@ def _current_toolchain_impl(ctx):
     if not py_toolchain.py3_runtime:
         fail("No PY3 runtime defined")
 
-    python3 = ctx.actions.declare_file("bin/python3")
-    ctx.actions.symlink(
-        output = python3,
-        target_file = py_toolchain.py3_runtime.interpreter,
-        is_executable = True,
-    )
+    # python3 = ctx.actions.declare_file("bin/python3")
+    # ctx.actions.symlink(
+    #     output = python3,
+    #     target_file = py_toolchain.py3_runtime.interpreter,
+    #     is_executable = True,
+    # )
 
-    binaries.append(python3)
+    binaries.append(py_toolchain.py3_runtime.interpreter)
     transitive_depsets.append(py_toolchain.py3_runtime.files)
 
     # TODO: Setup chainload file for resolved C++ toolchain
@@ -103,7 +103,8 @@ def _current_toolchain_impl(ctx):
     if macos_sdk_toolchain:
         additional_sets["VCPKG_OSX_SYSROOT"] = "\"$ENV{VCPKG_EXEC_ROOT}/%s\"" % macos_sdk_toolchain.macos_sdk_info.path
 
-        # additional_sets["VCPKG_OSX_DEPLOYMENT_TARGET"] = "14"
+        # TODO: make this configurable
+        additional_sets["VCPKG_OSX_DEPLOYMENT_TARGET"] = "14"
         transitive_depsets.append(macos_sdk_toolchain.macos_sdk_info.files)
 
     triplet_cmake = ctx.actions.declare_file("overlay_triplets/%s.cmake" % ctx.attr.triplet)

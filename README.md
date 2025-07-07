@@ -80,6 +80,16 @@ INFO: Running command line: bazel-bin/hello_fmt
 Hello FMT!
 ```
 
+## Debugging
+
+- `--@rules_vcpkg//:debug=True`
+    If set, will print VCPKG output for packages build.
+    Also will initialize build tree in `/tmp/vcpkg/builtrees/<package_name>` dir.
+
+- `--@rules_vcpkg//:debug_reuse_outputs=True`
+    If set and build outputs exist in `/tmp/vcpkg/builtrees/<package_name>` dir,
+    will reuse these outputs instead of running build.
+
 ## License
 
 Adopted [ABRMS-license.md](https://github.com/ErikMcClure/bad-licenses/blob/master/ABRMS-license.md) for now, will change to Apache 2 or MIT once somewhat anyhow ready.
