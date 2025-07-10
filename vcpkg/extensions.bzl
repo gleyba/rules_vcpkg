@@ -31,12 +31,18 @@ Environment variables 'PORT_DIR' and `INSTALL_DIR` will be available.
     ),
 })
 
+_configure_prefixed = tag_class(attrs = {
+    "package_prefix": attr.string(doc = "Packages prefix to configure"),
+    "include_postfixes": attr.string_list(doc = "Postfixes to add to includes"),
+})
+
 def _vcpkg(mctx):
     cur_bootstrap = None
     packages = set()
     packages_cpus = {}
     packages_repo_fixups = {}
     packages_ports_patches = {}
+    packages_prefixes_to_include_postfixes = {}
     for mod in mctx.modules:
         for bootstrap in mod.tags.bootstrap:
             if cur_bootstrap:
@@ -65,11 +71,15 @@ def _vcpkg(mctx):
             for patch in configure.port_patches:
                 packages_ports_patches[patch] = configure.package
 
+        for configure_prefixed in mod.tags.configure_prefixed:
+            if configure_prefixed.include_postfixes:
+                if configure_prefixed.package_prefix in packages_prefixes_to_include_postfixes:
+                    packages_prefixes_to_include_postfixes[configure_prefixed.package_prefix] += configure_prefixed.include_postfixes
+                else:
+                    packages_prefixes_to_include_postfixes[configure_prefixed.package_prefix] = configure_prefixed.include_postfixes
+
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
-
-    # mctx.report_progress("Bootstrapping external toolchains")
-    # bootstrap_toolchains(name = "vcpkg_external")
 
     mctx.report_progress("Bootstrapping vcpkg release: %s" % cur_bootstrap.release)
 
@@ -82,6 +92,7 @@ def _vcpkg(mctx):
         packages_cpus = packages_cpus,
         packages_repo_fixups = packages_repo_fixups,
         packages_ports_patches = packages_ports_patches,
+        packages_prefixes_to_include_postfixes = packages_prefixes_to_include_postfixes,
         external_bins = "@vcpkg_external//bin",
     )
 
@@ -97,6 +108,7 @@ vcpkg = module_extension(
         "bootstrap": _bootstrap,
         "install": _install,
         "configure": _configure,
+        "configure_prefixed": _configure_prefixed,
     },
 )
 

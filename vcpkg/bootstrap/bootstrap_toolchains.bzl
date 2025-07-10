@@ -50,12 +50,11 @@ def _bootstrap_toolchains_impl(rctx):
                 strip_prefix = "perl-darwin-arm64",
                 output = "perl",
             )
-
-            # rctx.download_and_extract(
-            #     url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
-            #     sha256 = "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
-            #     strip_prefix = "python",
-            # )
+            rctx.download_and_extract(
+                url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
+                sha256 = "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
+                strip_prefix = "python",
+            )
             rctx.extract(
                 archive = Label("//vcpkg/bootstrap/archives:arm64/autoconf.zip"),
                 strip_prefix = "autoconf",
@@ -118,7 +117,8 @@ def _bootstrap_toolchains_impl(rctx):
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")
         rctx.symlink("/usr/bin/clang++", "bin/clang++")
-        rctx.symlink("/usr/bin/python3", "bin/python3")
+        # rctx.symlink("/usr/bin/python3", "bin/python3")
+
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
 

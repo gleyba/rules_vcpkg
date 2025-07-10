@@ -101,7 +101,7 @@ def _extract_downloads(rctx, result, output, attempt):
                             download = paths.basename(download)
                         downloads.add(download)
 
-                # rctx.delete(buildtree_inner)
+                rctx.delete(buildtree_inner)
 
         if buildtree.basename in result:
             result[buildtree.basename] |= downloads
@@ -272,6 +272,7 @@ vcpkg_lib(
     name = "{package}",
     build = ":{package}_build",
     deps = [{lib_deps}],
+    include_postfixes = [{include_postfixes}],
     visibility = ["@vcpkg_{package}//:__subpackages__"],
 )
 """
@@ -336,19 +337,29 @@ def _write_templates(
         packages_cpus,
         depend_info,
         downloads_per_package,
+        packages_prefixes_to_include_postfixes,
         pu):
+    def _package_tpl(package, info):
+        include_postfixes = []
+        for prefix, postfixes in packages_prefixes_to_include_postfixes.items():
+            if package.startswith(prefix):
+                include_postfixes += postfixes
+
+        return _VCPKG_PACKAGE_TPL.format(
+            package = package,
+            features = _format_inner_list(info.features, "%s"),
+            build_deps = _format_inner_list(info.deps, ":%s_build"),
+            lib_deps = _format_inner_list(info.deps, ":%s"),
+            include_postfixes = _format_inner_list(include_postfixes, "%s"),
+            cpus = "1" if not package in packages_cpus else packages_cpus[package],
+        )
+
     rctx.file("%s/BUILD.bazel" % output, _BUILD_BAZEL_TPL.format(
         os = pu.targets.os,
         arch = pu.targets.arch,
         host_cpu_count = pu.host_cpus_count(),
         packages = "\n".join([
-            _VCPKG_PACKAGE_TPL.format(
-                package = package,
-                features = _format_inner_list(info.features, "%s"),
-                build_deps = _format_inner_list(info.deps, ":%s_build"),
-                lib_deps = _format_inner_list(info.deps, ":%s"),
-                cpus = "1" if not package in packages_cpus else packages_cpus[package],
-            )
+            _package_tpl(package, info)
             for package, info in depend_info.items()
         ]),
     ))
@@ -381,7 +392,8 @@ def _bootstrap(
         packages,
         packages_ports_patches,
         packages_cpus,
-        packages_repo_fixups):
+        packages_repo_fixups,
+        packages_prefixes_to_include_postfixes):
     pu = platform_utils(rctx)
 
     _download_vcpkg_tool(rctx, output, pu)
@@ -404,6 +416,7 @@ def _bootstrap(
         packages_cpus,
         depend_info,
         downloads_per_package,
+        packages_prefixes_to_include_postfixes,
         pu,
     )
 
@@ -450,6 +463,7 @@ def _bootrstrap_impl(rctx):
         packages_cpus = rctx.attr.packages_cpus,
         packages_repo_fixups = rctx.attr.packages_repo_fixups,
         packages_ports_patches = rctx.attr.packages_ports_patches,
+        packages_prefixes_to_include_postfixes = rctx.attr.packages_prefixes_to_include_postfixes,
     )
 
     rctx.delete(tmpdir)
@@ -486,6 +500,10 @@ bootstrap = repository_rule(
         "packages_ports_patches": attr.label_keyed_string_dict(
             mandatory = False,
             doc = "Patches to apply to port directory",
+        ),
+        "packages_prefixes_to_include_postfixes": attr.string_list_dict(
+            mandatory = False,
+            doc = "Postfixes to add to includes keyed by package prefixes.",
         ),
         "sha256": attr.string(
             mandatory = False,

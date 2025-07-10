@@ -1,5 +1,5 @@
 diff --git x_vcpkg_get_python_packages.cmake x_vcpkg_get_python_packages.cmake
-index 83f8438..9170536 100755
+index 83f8438..db01bc7 100755
 --- x_vcpkg_get_python_packages.cmake
 +++ x_vcpkg_get_python_packages.cmake
 @@ -46,7 +46,8 @@ function(x_vcpkg_get_python_packages)
@@ -12,7 +12,7 @@ index 83f8438..9170536 100755
                  elseif(arg_PYTHON_VERSION STREQUAL 2)
                      vcpkg_download_distfile(PYFILE
                          URLS "https://bootstrap.pypa.io/pip/2.7/get-pip.py"
-@@ -55,20 +56,23 @@ function(x_vcpkg_get_python_packages)
+@@ -55,21 +56,28 @@ function(x_vcpkg_get_python_packages)
                      )
                      vcpkg_execute_required_process(COMMAND "${arg_PYTHON_EXECUTABLE}" "${PYFILE}" --no-warn-script-location
                                                     WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
@@ -36,21 +36,35 @@ index 83f8438..9170536 100755
      endif()
      set(venv_path "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-venv")
 -    file(REMOVE_RECURSE "${venv_path}") # Remove old venv
-+    # file(REMOVE_RECURSE "${venv_path}") # Remove old venv
-     file(MAKE_DIRECTORY "${venv_path}")
+-    file(MAKE_DIRECTORY "${venv_path}")
++
++    if (VCPKG_DOWNLOAD_MODE)
++        file(REMOVE_RECURSE "${venv_path}") # Remove old venv
++        file(MAKE_DIRECTORY "${venv_path}")
++    endif()
++
      if(CMAKE_HOST_WIN32)
          file(MAKE_DIRECTORY "${python_dir}/DLLs")
-@@ -93,7 +97,8 @@ function(x_vcpkg_get_python_packages)
+         set(python_sub_path /Scripts)
+@@ -90,10 +98,14 @@ function(x_vcpkg_get_python_packages)
+     endif()
+ 
+     set(ENV{PYTHONNOUSERSITE} "1")
++
      message(STATUS "Setting up python virtual environment...")
-     vcpkg_execute_required_process(COMMAND "${arg_PYTHON_EXECUTABLE}" -I -m "${python_venv}" ${python_venv_options} "${venv_path}"
-                                    WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
+-    vcpkg_execute_required_process(COMMAND "${arg_PYTHON_EXECUTABLE}" -I -m "${python_venv}" ${python_venv_options} "${venv_path}"
+-                                   WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
 -                                   LOGNAME "venv-setup-${TARGET_TRIPLET}")
-+                                   LOGNAME "venv-setup-${TARGET_TRIPLET}"
-+                                   ALLOW_IN_DOWNLOAD_MODE)
++    if (VCPKG_DOWNLOAD_MODE)
++        vcpkg_execute_required_process(COMMAND "${arg_PYTHON_EXECUTABLE}" -I -m "${python_venv}" ${python_venv_options} "${venv_path}"
++                                       WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
++                                       LOGNAME "venv-setup-${TARGET_TRIPLET}"
++                                       ALLOW_IN_DOWNLOAD_MODE)
++    endif()
      vcpkg_add_to_path(PREPEND "${venv_path}${python_sub_path}")
      set(${arg_OUT_PYTHON_VAR} "${venv_path}${python_sub_path}/python${VCPKG_HOST_EXECUTABLE_SUFFIX}")
      set(ENV{VIRTUAL_ENV} "${venv_path}")
-@@ -103,13 +108,15 @@ function(x_vcpkg_get_python_packages)
+@@ -103,13 +115,16 @@ function(x_vcpkg_get_python_packages)
          message(STATUS "Installing requirements from: ${arg_REQUIREMENTS_FILE}")
          vcpkg_execute_required_process(COMMAND "${${arg_OUT_PYTHON_VAR}}" -I -m pip install -r ${arg_REQUIREMENTS_FILE}
                                         WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
@@ -60,11 +74,13 @@ index 83f8438..9170536 100755
      endif()
      if(DEFINED arg_PACKAGES)
          message(STATUS "Installing python packages: ${arg_PACKAGES}")
++
          vcpkg_execute_required_process(COMMAND "${${arg_OUT_PYTHON_VAR}}" -I -m pip install ${arg_PACKAGES}
-                                        WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
+-                                       WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
 -                                       LOGNAME "pip-install-packages-${TARGET_TRIPLET}")
-+                                       LOGNAME "pip-install-packages-${TARGET_TRIPLET}"
-+                                       ALLOW_IN_DOWNLOAD_MODE)
++                            WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
++                            LOGNAME "pip-install-packages-${TARGET_TRIPLET}"
++                            ALLOW_IN_DOWNLOAD_MODE)
      endif()
      message(STATUS "Setting up python virtual environment... finished.")
      set(${arg_OUT_PYTHON_VAR} "${${arg_OUT_PYTHON_VAR}}" PARENT_SCOPE)

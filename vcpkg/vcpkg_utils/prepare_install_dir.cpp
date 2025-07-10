@@ -109,7 +109,8 @@ void prepare_install_dir(
 void copy_sources(
     const fs::path& src,
     const fs::path& dst,
-    bool reuse_install_dirs
+    bool reuse_install_dirs,
+    bool use_symlinks
 ) {
     fs::create_directories(dst);
 
@@ -121,9 +122,10 @@ void copy_sources(
             copy_sources(
                 buildtree_entry_path,
                 dst_builtree_path,
-                reuse_install_dirs
+                reuse_install_dirs,
+                use_symlinks
             );
-        } else {
+        } else if (!use_symlinks) {
             fs::copy_file(
                 buildtree_entry_path, 
                 dst_builtree_path,
@@ -131,6 +133,12 @@ void copy_sources(
                     ? fs::copy_options::update_existing
                     : fs::copy_options::none
             );
+        } else {
+            if (fs::exists(dst_builtree_path)) {
+                fs::remove(dst_builtree_path);
+            }
+
+            fs::create_symlink(fs::absolute(buildtree_entry_path), dst_builtree_path);
         }
     }
 }
@@ -147,21 +155,22 @@ void prepare_build_root(
     bool reuse_install_dirs
 ) {
     for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
-        fs::path src_path = package_buildtree_entry.path() / "src";
-        
-        if (!fs::exists(src_path)) {
-            continue;
-        }
+        for (const auto& package_inner_entry:  fs::directory_iterator { package_buildtree_entry.path() }) {
+            fs::path entry_path = package_inner_entry.path();
+            if (entry_path.filename() == "src") {
+                for (const auto& src_entry: fs::directory_iterator {entry_path}) {
+                    fs::path src = src_entry.path();
+                    if (src.extension() != ".clean") {
+                        continue;
+                    }
 
-        for (const auto& src_entry: fs::directory_iterator {src_path}) {
-            fs::path src = src_entry.path();
-            if (src.extension() == ".clean") {
-                fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
-                dst.replace_extension("");
-                copy_sources(src, dst, reuse_install_dirs);
-            } else if (ends_with(src.string(), s_venv_postfix)) {
-                fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
-                copy_sources(src, dst, reuse_install_dirs);
+                    fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
+                    dst.replace_extension("");
+                    copy_sources(src, dst, reuse_install_dirs, false);
+                }
+            } else if (ends_with(entry_path.string(), s_venv_postfix)) {
+                fs::path dst =  buildtrees_tmp / entry_path.lexically_relative(buildtrees_root);
+                copy_sources(entry_path, dst, reuse_install_dirs, true);
             }
         }
     }

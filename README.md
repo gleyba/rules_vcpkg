@@ -90,10 +90,6 @@ Hello FMT!
     If set and build outputs exist in `/tmp/vcpkg/builtrees/<package_name>` dir,
     will reuse these outputs instead of running build.
 
-## License
-
-Adopted [ABRMS-license.md](https://github.com/ErikMcClure/bad-licenses/blob/master/ABRMS-license.md) for now, will change to Apache 2 or MIT once somewhat anyhow ready.
-
 ## Done and Upcoming work
 
 - Test more sophisticated packages with complex transitive dependencies structure:

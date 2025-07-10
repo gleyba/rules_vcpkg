@@ -59,7 +59,7 @@ _extract_package_outputs = rule(
     },
 )
 
-def vcpkg_lib(name, build, deps, **kwargs):
+def vcpkg_lib(name, build, deps, include_postfixes, **kwargs):
     _extract_package_outputs(
         name = "%s_headers" % name,
         build = build,
@@ -83,7 +83,10 @@ def vcpkg_lib(name, build, deps, **kwargs):
             "%s_release" % dep
             for dep in deps
         ],
-        includes = ["%s_headers" % name],
+        includes = ["%s_headers" % name] + [
+            "%s_headers/%s" % (name, postfix)
+            for postfix in include_postfixes
+        ],
         **kwargs
     )
     _extract_package_outputs(
@@ -103,6 +106,9 @@ def vcpkg_lib(name, build, deps, **kwargs):
             "%s_debug" % dep
             for dep in deps
         ],
-        includes = ["%s_headers" % name],
+        includes = ["%s_headers" % name] + [
+            "%s_headers/%s" % (name, postfix)
+            for postfix in include_postfixes
+        ],
         **kwargs
     )

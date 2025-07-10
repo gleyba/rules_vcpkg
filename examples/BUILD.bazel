@@ -1,15 +1,20 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-cc_binary(
-    name = "hello",
-    srcs = ["hello.cpp"],
-    deps = ["@vcpkg_mesa//:mesa"],
-)
-
 # cc_binary(
 #     name = "hello",
 #     srcs = ["hello.cpp"],
-#     deps = [
-#         "@vcpkg_qtdoc//:qtdoc",
-#     ],
+#     deps = ["@vcpkg_mesa//:mesa"],
 # )
+
+cc_binary(
+    name = "hello",
+    srcs = ["hello.cpp"],
+    deps = [
+        "@vcpkg_qt//:qt",
+    ],
+    # copts = [
+    #   "-framework Cocoa",
+    #   "-framework FSEvent",
+    #   "-framework Foundation",
+    # ],
+)
