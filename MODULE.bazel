@@ -20,4 +20,8 @@ use_repo(vcpkg_external, "vcpkg_external")
 
 register_toolchains("//vcpkg/toolchain:current_toolchain")
 
-bazel_dep(name = "buildifier_prebuilt", version = "8.0.3", dev_dependency = True)
+bazel_dep(
+    name = "buildifier_prebuilt",
+    version = "8.0.3",
+    dev_dependency = True,
+)

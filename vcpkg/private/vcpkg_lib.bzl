@@ -59,12 +59,17 @@ _extract_package_outputs = rule(
     },
 )
 
-def vcpkg_lib(name, build, deps, include_postfixes, **kwargs):
+def vcpkg_lib(
+        name,
+        build,
+        deps,
+        include_postfixes,
+        **kwargs):
     _extract_package_outputs(
         name = "%s_headers" % name,
         build = build,
         dir_prefix = "include",
-        collect_type = "headers",
+        collect_type = "any",
     )
     _extract_package_outputs(
         name = "%s_release_lib" % name,

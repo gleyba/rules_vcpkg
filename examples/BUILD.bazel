@@ -1,20 +1,23 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-# cc_binary(
-#     name = "hello",
-#     srcs = ["hello.cpp"],
-#     deps = ["@vcpkg_mesa//:mesa"],
-# )
-
 cc_binary(
     name = "hello",
     srcs = ["hello.cpp"],
+    env = {
+        "QT_DEBUG_PLUGINS": "1",
+    },
+    linkopts = [
+        "-framework Cocoa",
+        "-framework Foundation",
+        "-framework UniformTypeIdentifiers",
+        "-framework IOKit",
+        "-framework OpenGL",
+        "-framework Metal",
+        "-framework CoreServices",
+        "-framework Security",
+        "-framework QuartzCore",
+    ],
     deps = [
         "@vcpkg_qt//:qt",
     ],
-    # copts = [
-    #   "-framework Cocoa",
-    #   "-framework FSEvent",
-    #   "-framework Foundation",
-    # ],
 )

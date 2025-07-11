@@ -108,6 +108,9 @@ use_repo(
     "vcpkg_qt",
 )
 vcpkg.configure_prefixed(
+    collect_outputs = {
+        "qt6_plugins": "Qt6/plugins",
+    },
     include_postfixes = [
         "QT6",
     ],

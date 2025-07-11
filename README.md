@@ -111,8 +111,8 @@ Hello FMT!
     - [x] autoconf-archive
     - [x] automake
     - [x] libtoolize
-    - [ ] gsed
-    - [ ] zic
+    - [x] gsed
+    - [ ] zic (do we need it?)
     - [ ] gettext (do we need it?)
 - Support other platforms besides Mac OS X aarh64: 
     - [ ] Compile everything for MacOS x86_64

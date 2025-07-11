@@ -2,6 +2,7 @@ load("//vcpkg:vcpkg.bzl", "vcpkg_package")
 load("//vcpkg/bootstrap:bootstrap.bzl", call_bootstrap = "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap/macos:macos.bzl", _macos = "macos")
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict", "dict_to_kv_list")
 
 _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
@@ -34,6 +35,12 @@ Environment variables 'PORT_DIR' and `INSTALL_DIR` will be available.
 _configure_prefixed = tag_class(attrs = {
     "package_prefix": attr.string(doc = "Packages prefix to configure"),
     "include_postfixes": attr.string_list(doc = "Postfixes to add to includes"),
+    "collect_outputs": attr.string_dict(
+        doc = """\
+Directories prefix in outputs to add collect to single rule returning `DefaultInfo` with symlinks".
+A key is name of output rule and value is directory prefix to collect.
+""",
+    ),
 })
 
 def _vcpkg(mctx):
@@ -42,7 +49,8 @@ def _vcpkg(mctx):
     packages_cpus = {}
     packages_repo_fixups = {}
     packages_ports_patches = {}
-    packages_prefixes_to_include_postfixes = {}
+    pp_to_include_postfixes = {}
+    pp_to_collect_outputs = {}
     for mod in mctx.modules:
         for bootstrap in mod.tags.bootstrap:
             if cur_bootstrap:
@@ -62,21 +70,27 @@ def _vcpkg(mctx):
             if configure.cpus:
                 packages_cpus[configure.package] = configure.cpus
 
-            if configure.repo_fixups:
-                if configure.package in packages_repo_fixups:
-                    packages_repo_fixups[configure.package] += configure.repo_fixups
-                else:
-                    packages_repo_fixups[configure.package] = configure.repo_fixups
+            add_or_extend_list_in_dict(
+                packages_repo_fixups,
+                configure.package,
+                configure.repo_fixups,
+            )
 
             for patch in configure.port_patches:
                 packages_ports_patches[patch] = configure.package
 
         for configure_prefixed in mod.tags.configure_prefixed:
-            if configure_prefixed.include_postfixes:
-                if configure_prefixed.package_prefix in packages_prefixes_to_include_postfixes:
-                    packages_prefixes_to_include_postfixes[configure_prefixed.package_prefix] += configure_prefixed.include_postfixes
-                else:
-                    packages_prefixes_to_include_postfixes[configure_prefixed.package_prefix] = configure_prefixed.include_postfixes
+            add_or_extend_list_in_dict(
+                pp_to_include_postfixes,
+                configure_prefixed.package_prefix,
+                configure_prefixed.include_postfixes,
+            )
+
+            add_or_extend_list_in_dict(
+                pp_to_collect_outputs,
+                configure_prefixed.package_prefix,
+                dict_to_kv_list(configure_prefixed.collect_outputs),
+            )
 
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
@@ -92,7 +106,8 @@ def _vcpkg(mctx):
         packages_cpus = packages_cpus,
         packages_repo_fixups = packages_repo_fixups,
         packages_ports_patches = packages_ports_patches,
-        packages_prefixes_to_include_postfixes = packages_prefixes_to_include_postfixes,
+        pp_to_include_postfixes = pp_to_include_postfixes,
+        pp_to_collect_outputs = pp_to_collect_outputs,
         external_bins = "@vcpkg_external//bin",
     )
 
