@@ -1,7 +1,35 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_import")
+
+cc_import(
+    name = "qt_plugins",
+    objects = ["@vcpkg//:qt6_plugins"],
+    alwayslink = True,
+)
 
 cc_binary(
     name = "hello_qt",
     srcs = ["hello_qt.cpp"],
-    deps = ["@vcpkg_qt//:qt"],
+    # env = {
+    #     "QT_DEBUG_PLUGINS": "1",
+    #     "QT_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)",
+    #     "QT_QPA_PLATFORM_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)/platforms",
+    # },
+    linkopts = [
+        "-framework Cocoa",
+        "-framework Foundation",
+        "-framework UniformTypeIdentifiers",
+        "-framework IOKit",
+        "-framework OpenGL",
+        "-framework Metal",
+        "-framework CoreServices",
+        "-framework Security",
+        "-framework QuartzCore",
+    ],
+    # data = [
+    #     "@vcpkg//:qt6_plugins",
+    # ],
+    deps = [
+        ":qt_plugins",
+        "@vcpkg_qt//:qt",
+    ],
 )

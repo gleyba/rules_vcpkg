@@ -107,6 +107,14 @@ use_repo(
     "vcpkg",
     "vcpkg_qt",
 )
+
+# vcpkg.install(package = "jasper")
+# use_repo(
+#     vcpkg,
+#     "vcpkg",
+#     "vcpkg_jasper",
+# )
+
 vcpkg.configure_prefixed(
     collect_outputs = {
         "qt6_plugins": "Qt6/plugins",

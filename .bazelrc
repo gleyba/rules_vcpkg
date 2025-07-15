@@ -1,3 +1,8 @@
+# We have to use source directories at the moment fort packages,
+# which can contain `build`-named files inside, so Bazel fails to glob them/
+# See: https://github.com/aspect-build/rules_js/issues/1408#issuecomment-1861929140
+startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
+
 common --nosandbox_default_allow_network
 common --incompatible_allow_tags_propagation
 

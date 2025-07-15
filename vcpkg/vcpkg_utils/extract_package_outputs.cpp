@@ -19,9 +19,9 @@ int main(int argc, char ** argv) {
     fs::path scan_dir = package_output_dir / argv[3];
     std::string collect_type { argv[4] };
     fs::path empty_lib { argv[5] };
-    std::optional<std::string> extension;
+    std::vector<std::string> extensions;
     if (collect_type == "libs") {
-        extension = ".a";
+        extensions = { ".a", ".o" };
     }
 
     fs::create_directories(output_dir);
@@ -35,8 +35,17 @@ int main(int argc, char ** argv) {
         
             auto entry_path = dir_entry.path();
 
-            if (extension && !ends_with(entry_path.filename(), extension.value())) {
-                continue;
+            if (!extensions.empty()) {
+                bool need_skip = true;
+                for (const std::string& extension: extensions) {
+                    if (ends_with(entry_path.filename(), extension)) {
+                        need_skip = false;
+                        break;
+                    }
+                }
+                if (need_skip) {
+                    continue;
+                }
             }
             
             auto relative_path = entry_path.lexically_relative(scan_dir);

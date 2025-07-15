@@ -6,7 +6,7 @@ load("//vcpkg/toolchain:current_toolchain.bzl", "DEFAULT_TRIPLET_SETS", "format_
 load(
     "//vcpkg/vcpkg_utils:format_utils.bzl",
     "add_or_extend_dict_to_list_in_dict",
-    "format_inner_dict",
+    "format_inner_dict_with_value_lists",
     "format_inner_list",
 )
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
@@ -271,17 +271,16 @@ vcpkg_build(
     port = "@vcpkg//vcpkg/ports:{package}",
     buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
     downloads = "@vcpkg//downloads:{package}",
-    package_features = [{features}],
-    collect_outputs = {{collect_outputs}},
-    deps = [{build_deps}],
+    package_features = {features},
+    deps = {build_deps}, 
     cpus = "{cpus}",
 )
 
 vcpkg_lib(
     name = "{package}",
     build = ":{package}_build",
-    deps = [{lib_deps}],
-    include_postfixes = [{include_postfixes}],
+    deps = {lib_deps},
+    include_postfixes = {include_postfixes},
     visibility = ["@vcpkg_{package}//:__subpackages__"],
 )
 """
@@ -289,8 +288,8 @@ vcpkg_lib(
 _VCPKG_COLLECT_OUTPUTS_TPL = """\
 vcpkg_collect_outputs(
     name = "{name}",
-    packages_builds = [{packages_builds}],
-    packages_to_prefixes = {{packages_to_prefixes}},
+    packages_builds = {packages_builds},
+    packages_to_prefixes = {packages_to_prefixes},
     visibility = ["//visibility:public"],
 )
 """
@@ -300,7 +299,7 @@ exports_files(
     srcs = [
         "vcpkg",
         ".vcpkg-root",
-        "LICENSE.txt",    
+        "LICENSE.txt",
     ],
     visibility = ["//visibility:public"],
 )
@@ -309,7 +308,7 @@ exports_files(
 _PACKAGE_DOWNLOAD_TPL = """\
 filegroup(
     name = "{package_name}",
-    srcs = [{downloads}],
+    srcs = {downloads},
     visibility = ["//visibility:public"],
 )
 """
@@ -334,6 +333,22 @@ _PORT_BAZEL_TPL = """\
 filegroup(
     name = "{port}",
     srcs = glob(["{port}/**/*"]),
+    visibility = ["//visibility:public"],
+)
+"""
+
+_BUILDTREE_BAZEL_TPL = """\
+filegroup(
+    name = "{package}",
+    srcs = glob(
+        [ "{package}/*" ],
+        exclude = [
+            "{package}/*-rel",
+            "{package}/*-dbg",
+        ],
+        exclude_directories = 0,
+        allow_empty = True,
+    ),
     visibility = ["//visibility:public"],
 )
 """
@@ -373,8 +388,8 @@ def _write_templates(
         return _VCPKG_PACKAGE_TPL.format(
             package = package,
             features = format_inner_list(info.features),
-            build_deps = format_inner_list(info.deps, ":%s_build"),
-            lib_deps = format_inner_list(info.deps, ":%s"),
+            build_deps = format_inner_list(info.deps, pattern = "\":%s_build\""),
+            lib_deps = format_inner_list(info.deps, pattern = "\":%s\""),
             include_postfixes = format_inner_list(include_postfixes),
             cpus = "1" if not package in packages_cpus else packages_cpus[package],
         )
@@ -390,10 +405,16 @@ def _write_templates(
         collect_outputs = "\n".join([
             _VCPKG_COLLECT_OUTPUTS_TPL.format(
                 name = name,
-                packages_builds = format_inner_list(packages_to_prefixes.keys(), ":%s_build"),
-                packages_to_prefixes = format_inner_dict(packages_to_prefixes),
+                packages_builds = format_inner_list(
+                    packages_to_prefixes.keys(),
+                    pattern = "\":%s_build\"",
+                ),
+                packages_to_prefixes = format_inner_dict_with_value_lists(
+                    packages_to_prefixes,
+                ),
             )
-            for name, packages_to_prefixes in collect_outputs
+            for name, packages_to_prefixes in collect_outputs.items()
+            if packages_to_prefixes
         ]),
     ))
 
@@ -402,7 +423,10 @@ def _write_templates(
     rctx.file("%s/downloads/BUILD.bazel" % output, "\n".join([
         _PACKAGE_DOWNLOAD_TPL.format(
             package_name = package_name,
-            downloads = format_inner_list(downloads, "%s"),
+            downloads = format_inner_list(
+                downloads,
+                pattern = "\"%s\"",
+            ),
         )
         for package_name, downloads in downloads_per_package.items()
     ]))
@@ -413,8 +437,8 @@ def _write_templates(
         for port in depend_info.keys()
     ]))
     rctx.file("%s/vcpkg/buildtrees/BUILD.bazel" % output, "\n".join([
-        _PORT_BAZEL_TPL.format(port = port)
-        for port in depend_info.keys()
+        _BUILDTREE_BAZEL_TPL.format(package = package)
+        for package in depend_info.keys()
     ]))
 
 def _bootstrap(

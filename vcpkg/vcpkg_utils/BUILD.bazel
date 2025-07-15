@@ -20,11 +20,27 @@ cc_library(
     hdrs = ["package_ctrl.hpp"],
 )
 
+cc_library(
+    name = "copy_sources",
+    srcs = ["copy_sources.cpp"],
+    hdrs = ["copy_sources.hpp"],
+)
+
+cc_binary(
+    name = "collect_outputs_by_prefixes",
+    srcs = ["collect_outputs_by_prefixes.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [":copy_sources"],
+)
+
 cc_binary(
     name = "prepare_install_dir",
     srcs = ["prepare_install_dir.cpp"],
     visibility = ["//visibility:public"],
-    deps = [":package_ctrl"],
+    deps = [
+        ":copy_sources",
+        ":package_ctrl",
+    ],
 )
 
 cc_binary(
