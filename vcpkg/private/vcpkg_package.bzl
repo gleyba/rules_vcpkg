@@ -34,7 +34,7 @@ _vcpkg_lib_link = rule(
     },
 )
 
-def vcpkg_lib_link(name, release_lib, debug_lib, **kwargs):
+def vcpkg_package(name, release_lib, debug_lib, **kwargs):
     _vcpkg_lib_link(
         name = name,
         lib = select({
@@ -43,29 +43,3 @@ def vcpkg_lib_link(name, release_lib, debug_lib, **kwargs):
         }),
         **kwargs
     )
-
-_BAZEL_PACKAGE_TPL = """\
-load("@rules_vcpkg//vcpkg/private:vcpkg_package.bzl", "vcpkg_lib_link")
-
-vcpkg_lib_link(
-    name = "{package}",
-    release_lib = "@vcpkg//:{package}_release",
-    debug_lib = "@vcpkg//:{package}_debug",
-    visibility = ["//visibility:public"],
-)
-"""
-
-def _vcpkg_package_impl(rctx):
-    rctx.file(
-        "BUILD.bazel",
-        _BAZEL_PACKAGE_TPL.format(
-            package = rctx.attr.package,
-        ),
-    )
-
-vcpkg_package = repository_rule(
-    implementation = _vcpkg_package_impl,
-    attrs = {
-        "package": attr.string(doc = "Package name"),
-    },
-)

@@ -3,12 +3,7 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//vcpkg/bootstrap:collect_depend_info.bzl", "collect_depend_info")
 load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
 load("//vcpkg/toolchain:current_toolchain.bzl", "DEFAULT_TRIPLET_SETS", "format_additions")
-load(
-    "//vcpkg/vcpkg_utils:format_utils.bzl",
-    "add_or_extend_dict_to_list_in_dict",
-    "format_inner_dict_with_value_lists",
-    "format_inner_list",
-)
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
@@ -227,7 +222,6 @@ def _download_deps(rctx, output, tmpdir, external_bins):
     return downloads, None
 
 _BUILD_BAZEL_TPL = """\
-load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build", "vcpkg_lib", "vcpkg_collect_outputs")
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
 
 vcpkg_toolchain(
@@ -257,41 +251,7 @@ toolchain(
     toolchain = ":vcpkg",
     toolchain_type = "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
     visibility = ["//visibility:public"],
-)
-
-{packages}
-
-{collect_outputs}\
-"""
-
-_VCPKG_PACKAGE_TPL = """\
-vcpkg_build(
-    name = "{package}_build",
-    package_name = "{package}",
-    port = "@vcpkg//vcpkg/ports:{package}",
-    buildtree = "@vcpkg//vcpkg/buildtrees:{package}",
-    downloads = "@vcpkg//downloads:{package}",
-    package_features = {features},
-    deps = {build_deps}, 
-    cpus = "{cpus}",
-)
-
-vcpkg_lib(
-    name = "{package}",
-    build = ":{package}_build",
-    deps = {lib_deps},
-    include_postfixes = {include_postfixes},
-    visibility = ["@vcpkg_{package}//:__subpackages__"],
-)
-"""
-
-_VCPKG_COLLECT_OUTPUTS_TPL = """\
-vcpkg_collect_outputs(
-    name = "{name}",
-    packages_builds = {packages_builds},
-    packages_to_prefixes = {packages_to_prefixes},
-    visibility = ["//visibility:public"],
-)
+)\
 """
 
 _VCPKG_BAZEL = """\
@@ -356,66 +316,13 @@ filegroup(
 def _write_templates(
         rctx,
         output,
-        packages_cpus,
         depend_info,
         downloads_per_package,
-        pp_to_include_postfixes,
-        pp_to_collect_outputs,
         pu):
-    collect_outputs = {}
-
-    def _package_tpl(package, info):
-        include_postfixes = []
-        for prefix, postfixes in pp_to_include_postfixes.items():
-            if not package.startswith(prefix):
-                continue
-
-            include_postfixes += postfixes
-
-        for prefix, outputs in pp_to_collect_outputs.items():
-            if not package.startswith(prefix):
-                continue
-
-            for value in outputs:
-                name, prefix = value.split("=")
-
-                add_or_extend_dict_to_list_in_dict(
-                    collect_outputs,
-                    name,
-                    {package: [prefix]},
-                )
-
-        return _VCPKG_PACKAGE_TPL.format(
-            package = package,
-            features = format_inner_list(info.features),
-            build_deps = format_inner_list(info.deps, pattern = "\":%s_build\""),
-            lib_deps = format_inner_list(info.deps, pattern = "\":%s\""),
-            include_postfixes = format_inner_list(include_postfixes),
-            cpus = "1" if not package in packages_cpus else packages_cpus[package],
-        )
-
     rctx.file("%s/BUILD.bazel" % output, _BUILD_BAZEL_TPL.format(
         os = pu.targets.os,
         arch = pu.targets.arch,
         host_cpu_count = pu.host_cpus_count(),
-        packages = "\n".join([
-            _package_tpl(package, info)
-            for package, info in depend_info.items()
-        ]),
-        collect_outputs = "\n".join([
-            _VCPKG_COLLECT_OUTPUTS_TPL.format(
-                name = name,
-                packages_builds = format_inner_list(
-                    packages_to_prefixes.keys(),
-                    pattern = "\":%s_build\"",
-                ),
-                packages_to_prefixes = format_inner_dict_with_value_lists(
-                    packages_to_prefixes,
-                ),
-            )
-            for name, packages_to_prefixes in collect_outputs.items()
-            if packages_to_prefixes
-        ]),
     ))
 
     rctx.file("%s/vcpkg/BUILD.bazel" % output, _VCPKG_BAZEL)
@@ -425,7 +332,7 @@ def _write_templates(
             package_name = package_name,
             downloads = format_inner_list(
                 downloads,
-                pattern = "\"%s\"",
+                pattern = "\"{dep}\"",
             ),
         )
         for package_name, downloads in downloads_per_package.items()
@@ -448,10 +355,7 @@ def _bootstrap(
         external_bins,
         packages,
         packages_ports_patches,
-        packages_cpus,
-        packages_repo_fixups,
-        pp_to_include_postfixes,
-        pp_to_collect_outputs):
+        packages_repo_fixups):
     pu = platform_utils(rctx)
 
     _download_vcpkg_tool(rctx, output, pu)
@@ -471,12 +375,14 @@ def _bootstrap(
     _write_templates(
         rctx,
         output,
-        packages_cpus,
         depend_info,
         downloads_per_package,
-        pp_to_include_postfixes,
-        pp_to_collect_outputs,
         pu,
+    )
+
+    rctx.file(
+        "depend_info.json",
+        json.encode_indent(depend_info),
     )
 
     return None
@@ -519,11 +425,8 @@ def _bootrstrap_impl(rctx):
         tmpdir = tmpdir,
         external_bins = external_bins,
         packages = rctx.attr.packages,
-        packages_cpus = rctx.attr.packages_cpus,
         packages_repo_fixups = rctx.attr.packages_repo_fixups,
         packages_ports_patches = rctx.attr.packages_ports_patches,
-        pp_to_include_postfixes = rctx.attr.pp_to_include_postfixes,
-        pp_to_collect_outputs = rctx.attr.pp_to_collect_outputs,
     )
 
     rctx.delete(tmpdir)
@@ -549,10 +452,6 @@ bootstrap = repository_rule(
             mandatory = True,
             doc = "Packages to install",
         ),
-        "packages_cpus": attr.string_dict(
-            mandatory = False,
-            doc = "Packages build assigned cpu count",
-        ),
         "packages_repo_fixups": attr.string_list_dict(
             mandatory = False,
             doc = "Packages fixup bash script lines",
@@ -560,14 +459,6 @@ bootstrap = repository_rule(
         "packages_ports_patches": attr.label_keyed_string_dict(
             mandatory = False,
             doc = "Patches to apply to port directory",
-        ),
-        "pp_to_include_postfixes": attr.string_list_dict(
-            mandatory = False,
-            doc = "Postfixes to add to includes keyed by package prefixes.",
-        ),
-        "pp_to_collect_outputs": attr.string_list_dict(
-            mandatory = False,
-            doc = "Directories prefix in outputs to add collect.",
         ),
         "sha256": attr.string(
             mandatory = False,

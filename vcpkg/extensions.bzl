@@ -1,8 +1,13 @@
-load("//vcpkg:vcpkg.bzl", "vcpkg_package")
-load("//vcpkg/bootstrap:bootstrap.bzl", call_bootstrap = "bootstrap")
+load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
+load("//vcpkg/bootstrap:declare.bzl", "declare")
 load("//vcpkg/bootstrap/macos:macos.bzl", _macos = "macos")
-load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict", "dict_to_kv_list")
+load(
+    "//vcpkg/vcpkg_utils:format_utils.bzl",
+    "add_or_extend_list_in_dict",
+    "dict_list_to_kv_list",
+    "dict_to_kv_list",
+)
 
 _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
@@ -41,6 +46,11 @@ Directories prefix in outputs to add collect to single rule returning `DefaultIn
 A key is name of output rule and value is directory prefix to collect.
 """,
     ),
+    "collect_outputs_file_extensions": attr.string_list_dict(
+        doc = """\
+For `collect_outputs`, do additional filtering by file extensions.
+""",
+    ),
 })
 
 def _vcpkg(mctx):
@@ -51,17 +61,18 @@ def _vcpkg(mctx):
     packages_ports_patches = {}
     pp_to_include_postfixes = {}
     pp_to_collect_outputs = {}
+    pp_to_collect_outputs_fexts = {}
     for mod in mctx.modules:
-        for bootstrap in mod.tags.bootstrap:
+        for bootstrap_defs in mod.tags.bootstrap:
             if cur_bootstrap:
-                if cur_bootstrap.release < bootstrap.release:
+                if cur_bootstrap.release < bootstrap_defs.release:
                     tmp = cur_bootstrap
-                    cur_bootstrap = bootstrap
-                    bootstrap = tmp
+                    cur_bootstrap = bootstrap_defs
+                    bootstrap_defs = tmp
 
-                mctx.report_progress("Skip vcpkg release: %s, using a newer one" % bootstrap.release)
+                mctx.report_progress("Skip vcpkg release: %s, using a newer one" % bootstrap_defs.release)
             else:
-                cur_bootstrap = bootstrap
+                cur_bootstrap = bootstrap_defs
 
         for install in mod.tags.install:
             packages.add(install.package)
@@ -92,30 +103,38 @@ def _vcpkg(mctx):
                 dict_to_kv_list(configure_prefixed.collect_outputs),
             )
 
+            add_or_extend_list_in_dict(
+                pp_to_collect_outputs_fexts,
+                configure_prefixed.package_prefix,
+                dict_list_to_kv_list(configure_prefixed.collect_outputs_file_extensions),
+            )
+
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
 
     mctx.report_progress("Bootstrapping vcpkg release: %s" % cur_bootstrap.release)
 
-    call_bootstrap(
-        name = "vcpkg",
+    bootstrap(
+        name = "vcpkg_bootstrap",
         release = cur_bootstrap.release,
         commit = cur_bootstrap.commit,
         sha256 = cur_bootstrap.sha256,
         packages = list(packages),
-        packages_cpus = packages_cpus,
         packages_repo_fixups = packages_repo_fixups,
         packages_ports_patches = packages_ports_patches,
-        pp_to_include_postfixes = pp_to_include_postfixes,
-        pp_to_collect_outputs = pp_to_collect_outputs,
         external_bins = "@vcpkg_external//bin",
     )
 
-    for package in packages:
-        vcpkg_package(
-            name = "vcpkg_%s" % package,
-            package = package,
-        )
+    declare(
+        name = "vcpkg",
+        bootstrap_repo = "vcpkg_bootstrap",
+        depend_info = "@vcpkg_bootstrap//:depend_info.json",
+        packages = list(packages),
+        packages_cpus = packages_cpus,
+        pp_to_include_postfixes = pp_to_include_postfixes,
+        pp_to_collect_outputs = pp_to_collect_outputs,
+        pp_to_collect_outputs_fexts = pp_to_collect_outputs_fexts,
+    )
 
 vcpkg = module_extension(
     implementation = _vcpkg,

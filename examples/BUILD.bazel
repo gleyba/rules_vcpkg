@@ -4,6 +4,6 @@ cc_binary(
     name = "hello",
     srcs = ["hello.cpp"],
     deps = [
-        "@vcpkg_qttools//:qttools",
+        "@vcpkg//jasper",
     ],
 )
