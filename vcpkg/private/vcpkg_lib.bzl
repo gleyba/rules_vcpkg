@@ -58,6 +58,50 @@ _extract_package_outputs = rule(
     },
 )
 
+def _vcpkg_lib_impl(
+        name,
+        build,
+        dir_prefix,
+        additional_obj_files,
+        **kwargs):
+    _extract_package_outputs(
+        name = "%s.lib" % name,
+        build = build,
+        dir_prefix = dir_prefix,
+        collect_type = "libs",
+        additional = additional_obj_files,
+    )
+
+    cc_import(
+        name = "%s.import" % name,
+        hdrs = [":include"],
+        objects = [":%s.lib" % name],
+    )
+
+    cc_library(
+        name = name,
+        deps = kwargs.pop("deps", []) + [":%s.import" % name],
+        **kwargs
+    )
+
+_vcpkg_lib = macro(
+    implementation = _vcpkg_lib_impl,
+    inherit_attrs = native.cc_library,
+    attrs = {
+        "build": attr.label(
+            mandatory = True,
+            doc = "Target of `vcpk_build` rule with package outputs",
+        ),
+        "dir_prefix": attr.string(
+            mandatory = True,
+            doc = "Directory prefix to search files in",
+        ),
+        "additional_obj_files": attr.label_list(
+            allow_files = True,
+        ),
+    },
+)
+
 def vcpkg_lib(
         package,
         build,
@@ -71,58 +115,48 @@ def vcpkg_lib(
         hdrs = [info_header],
         srcs = [info_source],
         linkstatic = True,
+        visibility = ["//visibility:public"],
     )
+
     _extract_package_outputs(
         name = "include",
         build = build,
         dir_prefix = "include",
         collect_type = "any",
+        visibility = ["//visibility:public"],
     )
-    _extract_package_outputs(
-        name = "release_lib",
-        build = build,
-        dir_prefix = "lib",
-        collect_type = "libs",
-        additional = [":vcpkg_%s_info" % package],
-    )
-    cc_import(
-        name = "release_import",
-        hdrs = [":include"],
-        objects = [":release_lib"],
-    )
-    cc_library(
+
+    includes = ["include"] + [
+        "include/%s" % postfix
+        for postfix in include_postfixes
+    ]
+
+    _vcpkg_lib(
         name = "release",
-        deps = [":release_import"] + [
+        build = build,
+        includes = includes,
+        dir_prefix = "lib",
+        deps = [
             "//%s/libs:release" % dep
             for dep in deps
         ],
-        includes = ["include"] + [
-            "include/%s" % postfix
-            for postfix in include_postfixes
+        additional_obj_files = [
+            ":vcpkg_%s_info" % package,
         ],
-        **kwargs
+        visibility = ["//visibility:public"],
     )
-    _extract_package_outputs(
-        name = "debug_lib",
-        build = build,
-        dir_prefix = "debug/lib",
-        collect_type = "libs",
-        additional = [":vcpkg_%s_info" % package],
-    )
-    cc_import(
-        name = "debug_import",
-        hdrs = [":include"],
-        objects = [":debug_lib"],
-    )
-    cc_library(
+
+    _vcpkg_lib(
         name = "debug",
-        deps = [":debug_import"] + [
+        build = build,
+        includes = includes,
+        dir_prefix = "debug/lib",
+        deps = [
             "//%s/libs:debug" % dep
             for dep in deps
         ],
-        includes = ["include"] + [
-            "include/%s" % postfix
-            for postfix in include_postfixes
+        additional_obj_files = [
+            ":vcpkg_%s_info" % package,
         ],
-        **kwargs
+        visibility = ["//visibility:public"],
     )

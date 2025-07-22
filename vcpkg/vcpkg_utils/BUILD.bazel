@@ -27,13 +27,6 @@ cc_library(
 )
 
 cc_binary(
-    name = "collect_outputs_by_prefixes",
-    srcs = ["collect_outputs_by_prefixes.cpp"],
-    visibility = ["//visibility:public"],
-    deps = [":copy_sources"],
-)
-
-cc_binary(
     name = "prepare_install_dir",
     srcs = ["prepare_install_dir.cpp"],
     visibility = ["//visibility:public"],

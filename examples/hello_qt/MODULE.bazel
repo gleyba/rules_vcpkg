@@ -101,27 +101,13 @@ vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "openssl",
 )
-# vcpkg.install(package = "qt")
-# use_repo(
-#     vcpkg,
-#     "vcpkg",
-#     "vcpkg_qt",
-# )
-
-# vcpkg.configure_prefixed(
-#     collect_outputs = {
-#         "qt6_plugins": "Qt6/plugins",
-#     },
-#     collect_outputs_file_extensions = {
-#         "qt6_plugins": [ ".a", ".o" ],
-#     },
-#     include_postfixes = [
-#         "QT6",
-#     ],
-#     package_prefix = "qt",
-# )
-
-vcpkg.install(package = "jasper")
+vcpkg.install(package = "qt")
+vcpkg.configure_prefixed(
+    include_postfixes = [
+        "QT6",
+    ],
+    package_prefix = "qt",
+)
 use_repo(
     vcpkg,
     "vcpkg",

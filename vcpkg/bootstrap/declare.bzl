@@ -1,9 +1,4 @@
-load(
-    "//vcpkg/vcpkg_utils:format_utils.bzl",
-    "add_or_extend_dict_to_list_in_dict",
-    "format_inner_dict_with_value_lists",
-    "format_inner_list",
-)
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
 
 _VCPKG_BUILD_TPL = """\
 load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
@@ -66,21 +61,8 @@ vcpkg_package(
 )
 """
 
-_VCPKG_COLLECT_OUTPUTS_TPL = """\
-load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_collect_outputs")
-
-vcpkg_collect_outputs(
-    name = "{name}",
-    packages_builds = {packages_builds},
-    packages_to_prefixes = {packages_to_prefixes},
-    visibility = ["//visibility:public"],
-)
-"""
-
 def _declare_impl(rctx):
     depend_info = json.decode(rctx.read(rctx.path(rctx.attr.depend_info)))
-
-    collect_outputs = {}
 
     for package, info in depend_info.items():
         include_postfixes = []
@@ -89,19 +71,6 @@ def _declare_impl(rctx):
                 continue
 
             include_postfixes += postfixes
-
-        for prefix, outputs in rctx.attr.pp_to_collect_outputs.items():
-            if not package.startswith(prefix):
-                continue
-
-            for value in outputs:
-                name, prefix = value.split("=")
-
-                add_or_extend_dict_to_list_in_dict(
-                    collect_outputs,
-                    name,
-                    {package: [prefix]},
-                )
 
         rctx.file(
             "%s/vcpkg_build/BUILD.bazel" % package,
@@ -139,6 +108,11 @@ def _declare_impl(rctx):
             ),
         )
 
+        depend_info[package]["vcpkg_build"] = "@%s//%s/vcpkg_build" % (
+            rctx.original_name,
+            package,
+        )
+
     for package in rctx.attr.packages:
         rctx.file(
             "%s/BUILD.bazel" % package,
@@ -147,26 +121,10 @@ def _declare_impl(rctx):
             ),
         )
 
-    # rctx.file("BUILD.bazel", _BUILD_BAZEL_TPL.format(
-    #     packages = "\n".join([
-    #         _package_tpl(package, info)
-    #         for package, info in depend_info.items()
-    #     ]),
-    #     collect_outputs = "\n".join([
-    #         _VCPKG_COLLECT_OUTPUTS_TPL.format(
-    #             name = name,
-    #             packages_builds = format_inner_list(
-    #                 packages_to_prefixes.keys(),
-    #                 pattern = "\":%s_build\"",
-    #             ),
-    #             packages_to_prefixes = format_inner_dict_with_value_lists(
-    #                 packages_to_prefixes,
-    #             ),
-    #         )
-    #         for name, packages_to_prefixes in collect_outputs.items()
-    #         if packages_to_prefixes
-    #     ]),
-    # ))
+    rctx.file(
+        "packages_info.bzl",
+        json.encode_indent(depend_info),
+    )
 
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(reproducible = True)
@@ -195,14 +153,6 @@ declare = repository_rule(
         "pp_to_include_postfixes": attr.string_list_dict(
             mandatory = False,
             doc = "Postfixes to add to includes keyed by package prefixes.",
-        ),
-        "pp_to_collect_outputs": attr.string_list_dict(
-            mandatory = False,
-            doc = "Directories prefix in outputs to add collect.",
-        ),
-        "pp_to_collect_outputs_fexts": attr.string_list_dict(
-            mandatory = False,
-            doc = "Additional filtering by file extensions to `collect_outputs`.",
         ),
     },
 )

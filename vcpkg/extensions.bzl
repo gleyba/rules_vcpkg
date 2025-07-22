@@ -2,12 +2,7 @@ load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap:declare.bzl", "declare")
 load("//vcpkg/bootstrap/macos:macos.bzl", _macos = "macos")
-load(
-    "//vcpkg/vcpkg_utils:format_utils.bzl",
-    "add_or_extend_list_in_dict",
-    "dict_list_to_kv_list",
-    "dict_to_kv_list",
-)
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict")
 
 _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
@@ -40,17 +35,6 @@ Environment variables 'PORT_DIR' and `INSTALL_DIR` will be available.
 _configure_prefixed = tag_class(attrs = {
     "package_prefix": attr.string(doc = "Packages prefix to configure"),
     "include_postfixes": attr.string_list(doc = "Postfixes to add to includes"),
-    "collect_outputs": attr.string_dict(
-        doc = """\
-Directories prefix in outputs to add collect to single rule returning `DefaultInfo` with symlinks".
-A key is name of output rule and value is directory prefix to collect.
-""",
-    ),
-    "collect_outputs_file_extensions": attr.string_list_dict(
-        doc = """\
-For `collect_outputs`, do additional filtering by file extensions.
-""",
-    ),
 })
 
 def _vcpkg(mctx):
@@ -60,8 +44,6 @@ def _vcpkg(mctx):
     packages_repo_fixups = {}
     packages_ports_patches = {}
     pp_to_include_postfixes = {}
-    pp_to_collect_outputs = {}
-    pp_to_collect_outputs_fexts = {}
     for mod in mctx.modules:
         for bootstrap_defs in mod.tags.bootstrap:
             if cur_bootstrap:
@@ -97,18 +79,6 @@ def _vcpkg(mctx):
                 configure_prefixed.include_postfixes,
             )
 
-            add_or_extend_list_in_dict(
-                pp_to_collect_outputs,
-                configure_prefixed.package_prefix,
-                dict_to_kv_list(configure_prefixed.collect_outputs),
-            )
-
-            add_or_extend_list_in_dict(
-                pp_to_collect_outputs_fexts,
-                configure_prefixed.package_prefix,
-                dict_list_to_kv_list(configure_prefixed.collect_outputs_file_extensions),
-            )
-
     if not cur_bootstrap:
         fail("No vcpkg release version to bootstrap specified")
 
@@ -132,8 +102,6 @@ def _vcpkg(mctx):
         packages = list(packages),
         packages_cpus = packages_cpus,
         pp_to_include_postfixes = pp_to_include_postfixes,
-        pp_to_collect_outputs = pp_to_collect_outputs,
-        pp_to_collect_outputs_fexts = pp_to_collect_outputs_fexts,
     )
 
 vcpkg = module_extension(

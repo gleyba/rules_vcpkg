@@ -5,7 +5,11 @@ startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
 
 common --nosandbox_default_allow_network
 common --incompatible_allow_tags_propagation
-# common --experimental_repository_cache_hardlinks
+common --experimental_repository_cache_hardlinks
+common --nobuild_runfile_links
+common --noexperimental_check_external_repository_files
+common --incompatible_repo_env_ignores_action_env
+common --nolegacy_external_runfiles
 
 build --incompatible_strict_action_env
 build --experimental_reuse_sandbox_directories
