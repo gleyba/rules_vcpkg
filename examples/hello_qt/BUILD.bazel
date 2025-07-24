@@ -6,17 +6,14 @@ copy_qt_plugins(name = "qt_plugins")
 cc_import(
     name = "qt_plugins_import",
     objects = [":qt_plugins"],
-    alwayslink = True,
 )
 
 cc_binary(
     name = "hello_qt",
     srcs = ["hello_qt.cpp"],
-    # env = {
-    #     "QT_DEBUG_PLUGINS": "1",
-    #     "QT_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)",
-    #     "QT_QPA_PLATFORM_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)/platforms",
-    # },
+    env = {
+        "QT_DEBUG_PLUGINS": "1",
+    },
     linkopts = select({
         "@platforms//os:macos": [
             "-lresolv",
