@@ -12,7 +12,7 @@ vcpkg_build(
     package_features = {features},
     deps = {build_deps}, 
     cpus = "{cpus}",
-    visibility = ["//:__subpackages__"],
+    visibility = ["//visibility:public"],
 )
 """
 
@@ -121,9 +121,11 @@ def _declare_impl(rctx):
             ),
         )
 
+    rctx.file("BUILD.bazel", "")
+
     rctx.file(
         "packages_info.bzl",
-        json.encode_indent(depend_info),
+        "PACKAGES_INFO = %s" % json.encode_indent(depend_info),
     )
 
     if hasattr(rctx, "repo_metadata"):

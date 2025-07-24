@@ -132,7 +132,7 @@ def vcpkg_lib(
     ]
 
     _vcpkg_lib(
-        name = "release",
+        name = "%s.release" % package,
         build = build,
         includes = includes,
         dir_prefix = "lib",
@@ -143,11 +143,16 @@ def vcpkg_lib(
         additional_obj_files = [
             ":vcpkg_%s_info" % package,
         ],
+    )
+
+    native.alias(
+        name = "release",
+        actual = ":%s.release" % package,
         visibility = ["//visibility:public"],
     )
 
     _vcpkg_lib(
-        name = "debug",
+        name = "%s.debug" % package,
         build = build,
         includes = includes,
         dir_prefix = "debug/lib",
@@ -158,5 +163,11 @@ def vcpkg_lib(
         additional_obj_files = [
             ":vcpkg_%s_info" % package,
         ],
+        visibility = ["//visibility:public"],
+    )
+
+    native.alias(
+        name = "debug",
+        actual = ":%s.debug" % package,
         visibility = ["//visibility:public"],
     )

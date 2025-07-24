@@ -5,7 +5,7 @@ bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_vcpkg", version = "0.0.0")
 local_path_override(
     module_name = "rules_vcpkg",
-    path = "..",
+    path = "../..",
 )
 
 macos = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "macos")
@@ -90,7 +90,7 @@ vcpkg.configure(
     # This patch is only mandatory if network usage prohibited in sandbox
     # with `--nosandbox_default_allow_network`
     port_patches = [
-        "//hello_qt:x_vcpkg_get_python_packages.patch",
+        "//:x_vcpkg_get_python_packages.patch",
     ],
 )
 vcpkg.configure(

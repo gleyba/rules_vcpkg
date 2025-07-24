@@ -1,10 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_import")
+load(":copy_qt_plugins.bzl", "copy_qt_plugins")
 
-# cc_import(
-#     name = "qt_plugins",
-#     objects = ["@vcpkg//:qt6_plugins"],
-#     alwayslink = True,
-# )
+copy_qt_plugins(name = "qt_plugins")
+
+cc_import(
+    name = "qt_plugins_import",
+    objects = [":qt_plugins"],
+    alwayslink = True,
+)
 
 cc_binary(
     name = "hello_qt",
@@ -14,22 +17,41 @@ cc_binary(
     #     "QT_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)",
     #     "QT_QPA_PLATFORM_PLUGIN_PATH": "$(location @vcpkg//:qt6_plugins)/platforms",
     # },
-    linkopts = [
-        "-framework Cocoa",
-        "-framework Foundation",
-        "-framework UniformTypeIdentifiers",
-        "-framework IOKit",
-        "-framework OpenGL",
-        "-framework Metal",
-        "-framework CoreServices",
-        "-framework Security",
-        "-framework QuartzCore",
-    ],
-    # data = [
-    #     "@vcpkg//:qt6_plugins",
-    # ],
+    linkopts = select({
+        "@platforms//os:macos": [
+            "-lresolv",
+            "-framework Cocoa",
+            # "-framework AGL", # removed in latest MacOSX.sdk
+            "-framework Carbon",
+            "-framework OpenGL",
+            "-framework ImageIO",
+            "-framework CoreGraphics",
+            "-framework CoreText",
+            "-framework QuartzCore",
+            "-framework Metal",
+            "-framework CFNetwork",
+            "-framework SystemConfiguration",
+            "-framework IOKit",
+            "-framework CoreFoundation",
+            "-framework Foundation",
+            "-framework DiskArbitration",
+            "-framework ApplicationServices",
+            "-framework CoreServices",
+            "-framework UniformTypeIdentifiers",
+            "-framework AudioToolbox",
+            "-framework CoreMedia",
+            "-framework CoreVideo",
+            "-framework VideoToolbox",
+            "-framework Security",
+            "-framework AVFoundation",
+            "-framework AppKit",
+            "-framework IOSurface",
+            "-framework CoreLocation",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
-        ":qt_plugins",
-        "@vcpkg_qt//:qt",
+        ":qt_plugins_import",
+        "@vcpkg//qt",
     ],
 )
