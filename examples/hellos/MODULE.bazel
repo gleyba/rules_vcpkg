@@ -1,7 +1,7 @@
 module(name = "vcpkg_hellos")
 
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_cc", version = "0.1.4")
 bazel_dep(name = "rules_vcpkg", version = "0.0.0")
 local_path_override(
     module_name = "rules_vcpkg",
@@ -31,3 +31,10 @@ vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "duckdb",
 )
+use_repo(
+    vcpkg,
+    "vcpkg",
+    "vcpkg_bootstrap",
+)
+
+register_toolchains("@vcpkg_bootstrap//:vcpkg_toolchain")

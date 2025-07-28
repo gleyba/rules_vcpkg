@@ -90,7 +90,7 @@ def _current_toolchain_impl(ctx):
         additional_sets["VCPKG_OSX_SYSROOT"] = "\"$ENV{VCPKG_EXEC_ROOT}/%s\"" % macos_sdk_toolchain.macos_sdk_info.path
 
         # TODO: make this configurable
-        additional_sets["VCPKG_OSX_DEPLOYMENT_TARGET"] = "14"
+        additional_sets["VCPKG_OSX_DEPLOYMENT_TARGET"] = macos_sdk_toolchain.macos_sdk_info.deployment_target
         transitive_depsets.append(macos_sdk_toolchain.macos_sdk_info.files)
 
     triplet_cmake = ctx.actions.declare_file("overlay_triplets/%s.cmake" % ctx.attr.triplet)

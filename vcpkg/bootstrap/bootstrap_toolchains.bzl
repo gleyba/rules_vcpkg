@@ -71,6 +71,7 @@ def _bootstrap_toolchains_impl(rctx):
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/bison.zip"))
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/flex.zip"))
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/make.zip"))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/gsed.zip"))
             rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/autoconf_archive.zip"))
             rctx.extract(
                 archive = Label("//vcpkg/bootstrap/archives:arm64/pkgconfig.zip"),
@@ -99,8 +100,6 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/find", "bin/find")
 
     rctx.symlink("/usr/sbin/zic", "bin/zic")
-    rctx.symlink("/opt/homebrew/bin/gsed", "bin/gsed")
-    # rctx.symlink("/opt/homebrew/bin/gettext", "bin/gettext")
 
     if rctx.os.name.startswith("mac"):
         rctx.symlink("/usr/sbin/sysctl", "bin/sysctl")

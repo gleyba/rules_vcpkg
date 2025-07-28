@@ -5,6 +5,7 @@ MacosSDKInfo = provider(
     fields = [
         "path",
         "files",
+        "deployment_target",
     ],
 )
 
@@ -16,6 +17,7 @@ def _macos_sdk_toolchain_impl(ctx):
         macos_sdk_info = MacosSDKInfo(
             path = directory_info.path,
             files = default_info.files,
+            deployment_target = ctx.attr.deployment_target,
         ),
     )
 
@@ -28,6 +30,9 @@ macos_sdk_toolchain = rule(
                 DirectoryInfo,
                 DefaultInfo,
             ],
+        ),
+        "deployment_target": attr.string(
+            mandatory = True,
         ),
     },
 )

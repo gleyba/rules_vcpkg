@@ -1,7 +1,6 @@
 load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap:declare.bzl", "declare")
-load("//vcpkg/bootstrap/macos:macos.bzl", _macos = "macos")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict")
 
 _bootstrap = tag_class(attrs = {
@@ -117,5 +116,3 @@ vcpkg = module_extension(
 vcpkg_external = module_extension(
     implementation = lambda _: bootstrap_toolchains(name = "vcpkg_external"),
 )
-
-macos = _macos

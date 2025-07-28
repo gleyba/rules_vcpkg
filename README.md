@@ -97,7 +97,7 @@ Hello FMT!
     - [x] Add [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html) example
     - [x] Add [Facebook Folly](https://github.com/facebook/folly) example
     - [x] Add [DuckDB](https://duckdb.org) example
-    - [ ] Add [QT](https://www.qt.io/) example
+    - [x] Add [QT](https://www.qt.io/) example
     - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
     - [ ] Add [Google Cloud Cpp](https://github.com/googleapis/google-cloud-cpp) example
     - [ ] Add [Azure SDK for Cpp](https://github.com/Azure/azure-sdk-for-cpp/tree/main) example
@@ -124,7 +124,7 @@ Hello FMT!
 - Hermeticity and reproducibility:
     - [x] Some work done and packages build are mostly cacheable from disk cache
     - [x] Use of [VCPKG assetcaching](https://learn.microsoft.com/en-us/vcpkg/users/assetcaching?WT.mc_id=vcpkg_inproduct_cli) to integrate packages downloads with Bazel downloader
-    - [x] Hermetic Mac OS X SDK from [joseluisq/macosx-sdks](https://github.com/joseluisq/macosx-sdks)
+    - [x] Hermetic Mac OS X SDK for QT example
     - [ ] Do more comprehensive cache hit/miss analysis
 - Support hermetic C/C++ Bazel toolchains by generating custom [Overlay Triplet](https://learn.microsoft.com/en-us/vcpkg/users/examples/overlay-triplets-linux-dynamic) with [VCPKG_CHAINLOAD_TOOLCHAIN_FILE](https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_chainload_toolchain_file):
     - [x] Overlay tripplet used as entry point to propagate custom configuration to VCPKG/Cmake
