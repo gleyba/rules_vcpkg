@@ -1,7 +1,8 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
-load("//vcpkg/bootstrap:collect_depend_info.bzl", "collect_depend_info")
-load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
+load("//vcpkg/bootstrap/utils:collect_depend_info.bzl", "collect_depend_info")
+load("//vcpkg/bootstrap/utils:download_deps.bzl", "download_deps")
+load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check")
 load("//vcpkg/toolchain:current_toolchain.bzl", "DEFAULT_TRIPLET_SETS", "format_additions")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
@@ -70,51 +71,10 @@ def _initialize(rctx, output, packages, packages_ports_patches, pu):
             ],
         )
 
-_DOWNLOAD_TRY_PREFIX = "Trying to download "
-_DOWNLOAD_TRY_POSTFIX = " using asset cache script"
-_USING_CACHED_PREFIX = "-- Using cached "
-
-def _extract_downloads(rctx, result, output, attempt):
-    if attempt == 15:
-        return "\n".join([
-            "We ran 'vcpkg install --only-downloads' to collect downloads 15 times,",
-            "but didn't collect all, probably we are in corrupted state",
-        ])
-
-    for buildtree in rctx.path("%s/vcpkg/buildtrees" % output).readdir():
-        downloads = set()
-        for buildtree_inner in buildtree.readdir():
-            if buildtree_inner.basename.endswith(".log"):
-                if buildtree_inner.basename.startswith("stdout"):
-                    buildtree_log_content = rctx.read(buildtree_inner)
-                    for line in buildtree_log_content.split("\n"):
-                        if line.startswith(_DOWNLOAD_TRY_PREFIX):
-                            if not line.endswith(_DOWNLOAD_TRY_POSTFIX):
-                                return "Can't parse try-download line: %s" % line
-
-                            download = line[len(_DOWNLOAD_TRY_PREFIX):-len(_DOWNLOAD_TRY_POSTFIX)].strip()
-                        elif line.startswith(_USING_CACHED_PREFIX):
-                            download = line[len(_USING_CACHED_PREFIX):].strip()
-                        else:
-                            continue
-
-                        if download[0] == "/":
-                            download = paths.basename(download)
-                        downloads.add(download)
-
-                rctx.delete(buildtree_inner)
-
-        if buildtree.basename in result:
-            result[buildtree.basename] |= downloads
-        else:
-            result[buildtree.basename] = downloads
-
-    return None
-
-def _perform_fixups(rctx, output, tmpdir, packages_repo_fixups, pu):
-    for package, sh_lines in packages_repo_fixups.items():
+def _perform_install_fixups(rctx, output, tmpdir, install_fixups, pu):
+    for package, sh_lines in install_fixups.items():
         rctx.file(
-            "%s/fixups/%s.sh" % (output, package),
+            "%s/install_fixups/%s.sh" % (output, package),
             content = "\n".join([
                 "#!/usr/bin/env bash",
                 "set -eu",
@@ -122,104 +82,29 @@ def _perform_fixups(rctx, output, tmpdir, packages_repo_fixups, pu):
             executable = True,
         )
         rctx.execute(
-            ["%s/fixups/%s.sh" % (output, package)],
+            ["%s/install_fixups/%s.sh" % (output, package)],
             environment = {
                 "PORT_DIR": "%s/vcpkg/ports/%s" % (output, package),
                 "INSTALL_DIR": "%s/install/%s" % (tmpdir, pu.prefix),
             },
         )
 
-_COLLECT_ASSETS_SH = """\
-#!/bin/bash
-
-set -eu
-
-cd "$(dirname "$0")"
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --url) url="$2"; shift ;;
-        --dst) dst="$2"; shift ;;
-        --sha512) sha512="$2"; shift ;;
-        *) echo "Unknown parameter passed: $1"; exit 1 ;;
-    esac
-    shift
-done
-
-if [ -f "collect_assets/${sha512}" ]; then
-    ln "collect_assets/${sha512}" "${dst}"
-else
-    echo "${url} ${sha512}" >> collect_assets.csv
-fi
-"""
-
-def _download_deps(rctx, output, tmpdir, external_bins):
-    full_path = str(rctx.path(output))
-
-    rctx.file("collect_assets.sh", _COLLECT_ASSETS_SH, executable = True)
-
-    install_args = [
-        "--only-downloads",
-        "--x-asset-sources=%s" % ";".join([
-            " ".join([
-                "x-script,%s/collect_assets.sh" % full_path,
-                "--url {url}",
-                "--dst {dst}",
-                "--sha512 {sha512}",
-            ]),
-            "x-block-origin",
-        ]),
-    ]
-
-    downloads = {}
-
-    # Just some number of iterations as a hack, should finish early
-    for attempt in range(16):
-        rctx.file("collect_assets.csv", "", executable = False)
-
-        # Call `install --only-downloads` jsut to collect csv with urls and sha512
-        _, err = vcpkg_exec(rctx, "install", install_args, output, tmpdir, external_bins)
-        if err:
-            return None, err
-
-        if attempt:
-            err = _extract_downloads(rctx, downloads, output, attempt)
-            if err:
-                return None, err
-
-        to_download = [
-            line.split(" ")
-            for line in rctx.read("collect_assets.csv").split("\n")
-            if line
-        ]
-        if not to_download:
-            # After last `install --only-downloads` we must have downloads in place
-            break
-
-        # Actually download assets
-        for url, sha512 in to_download:
-            rctx.download(
-                url = url,
-                output = "collect_assets/%s" % sha512,
-                integrity = "sha512-%s" % base64_encode_hexstr(sha512),
-            )
-
-    rctx.delete("collect_assets.sh")
-    rctx.delete("collect_assets.csv")
-    rctx.delete("collect_assets")
-
-    exec_check(
-        rctx,
-        "Moving downloads",
-        [
-            "mv",
-            "%s/downloads" % tmpdir,
-            "downloads",
-        ],
-        workdir = output,
-    )
-
-    return downloads, None
+def _perform_buildtree_fixups(rctx, output, buildtree_fixups):
+    for package, sh_lines in buildtree_fixups.items():
+        rctx.file(
+            "%s/buildtree_fixups/%s.sh" % (output, package),
+            content = "\n".join([
+                "#!/usr/bin/env bash",
+                "set -eu",
+            ] + sh_lines),
+            executable = True,
+        )
+        rctx.execute(
+            ["%s/buildtree_fixups/%s.sh" % (output, package)],
+            environment = {
+                "BUILDTREE_DIR": "%s/vcpkg/buildtrees/%s" % (output, package),
+            },
+        )
 
 _BUILD_BAZEL_TPL = """\
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
@@ -354,23 +239,26 @@ def _bootstrap(
         tmpdir,
         external_bins,
         packages,
-        packages_ports_patches,
-        packages_repo_fixups):
+        packages_install_fixups,
+        packages_buildtree_fixups,
+        packages_ports_patches):
     pu = platform_utils(rctx)
 
     _download_vcpkg_tool(rctx, output, pu)
 
     _initialize(rctx, output, packages, packages_ports_patches, pu)
 
-    _perform_fixups(rctx, output, tmpdir, packages_repo_fixups, pu)
-
-    downloads_per_package, err = _download_deps(rctx, output, tmpdir, external_bins)
-    if err:
-        return err
+    _perform_install_fixups(rctx, output, tmpdir, packages_install_fixups, pu)
 
     depend_info, err = collect_depend_info(rctx, output, tmpdir, external_bins, packages)
     if err:
         return err
+
+    downloads_per_package, err = download_deps(rctx, output, tmpdir, depend_info, external_bins)
+    if err:
+        return err
+
+    _perform_buildtree_fixups(rctx, output, packages_buildtree_fixups)
 
     _write_templates(
         rctx,
@@ -425,7 +313,8 @@ def _bootrstrap_impl(rctx):
         tmpdir = tmpdir,
         external_bins = external_bins,
         packages = rctx.attr.packages,
-        packages_repo_fixups = rctx.attr.packages_repo_fixups,
+        packages_install_fixups = rctx.attr.packages_install_fixups,
+        packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
         packages_ports_patches = rctx.attr.packages_ports_patches,
     )
 
@@ -452,9 +341,13 @@ bootstrap = repository_rule(
             mandatory = True,
             doc = "Packages to install",
         ),
-        "packages_repo_fixups": attr.string_list_dict(
+        "packages_install_fixups": attr.string_list_dict(
             mandatory = False,
-            doc = "Packages fixup bash script lines",
+            doc = "Packages install dir fixup bash script lines",
+        ),
+        "packages_buildtree_fixups": attr.string_list_dict(
+            mandatory = False,
+            doc = "Packages buildtree fixup bash script lines",
         ),
         "packages_ports_patches": attr.label_keyed_string_dict(
             mandatory = False,

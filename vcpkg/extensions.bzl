@@ -19,11 +19,18 @@ _configure = tag_class(attrs = {
         default = "1",
         doc = "Cpu cores to use for package build, accept `HOST_CPUS` keyword",
     ),
-    "repo_fixups": attr.string_list(
+    "install_fixups": attr.string_list(
         doc = """\
 Bash script lines to execute before `install --only-downloads` called.
 Helpful to copy some missing config files from ports directory to install one.
-Environment variables 'PORT_DIR' and `INSTALL_DIR` will be available.
+Environment variables 'PORT_DIR', and `INSTALL_DIR` will be available.
+""",
+    ),
+    "buildtree_fixups": attr.string_list(
+        doc = """\
+Bash script lines to execute after `install --only-downloads` called.
+Helpful to delete non-hermetic data or dangled symlinks.
+Environment variable 'BUILDTREE_DIR' and will be available.
 """,
     ),
     "port_patches": attr.label_list(
@@ -40,7 +47,8 @@ def _vcpkg(mctx):
     cur_bootstrap = None
     packages = set()
     packages_cpus = {}
-    packages_repo_fixups = {}
+    packages_install_fixups = {}
+    packages_buildtree_fixups = {}
     packages_ports_patches = {}
     pp_to_include_postfixes = {}
     for mod in mctx.modules:
@@ -63,9 +71,15 @@ def _vcpkg(mctx):
                 packages_cpus[configure.package] = configure.cpus
 
             add_or_extend_list_in_dict(
-                packages_repo_fixups,
+                packages_install_fixups,
                 configure.package,
-                configure.repo_fixups,
+                configure.install_fixups,
+            )
+
+            add_or_extend_list_in_dict(
+                packages_buildtree_fixups,
+                configure.package,
+                configure.buildtree_fixups,
             )
 
             for patch in configure.port_patches:
@@ -89,7 +103,8 @@ def _vcpkg(mctx):
         commit = cur_bootstrap.commit,
         sha256 = cur_bootstrap.sha256,
         packages = list(packages),
-        packages_repo_fixups = packages_repo_fixups,
+        packages_install_fixups = packages_install_fixups,
+        packages_buildtree_fixups = packages_buildtree_fixups,
         packages_ports_patches = packages_ports_patches,
         external_bins = "@vcpkg_external//bin",
     )

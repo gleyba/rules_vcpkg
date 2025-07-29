@@ -3,5 +3,5 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 cc_binary(
     name = "hello_folly",
     srcs = ["hello_folly.cpp"],
-    deps = ["@vcpkg_folly//:folly"],
+    deps = ["@vcpkg//folly"],
 )

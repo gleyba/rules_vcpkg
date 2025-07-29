@@ -39,6 +39,7 @@ def _vcpkg_build_impl(ctx):
     vcpkg_current_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:current_toolchain_type"].vcpkg_current_info
 
     # current_binaries = vcpkg_current_info.binaries.to_list()
+    assets = ctx.attr.assets[DirectoryInfo]
     external_binaries = ctx.attr._external_bins[DirectoryInfo]
     external_transitive = ctx.attr._externals[DefaultInfo]
 
@@ -96,6 +97,7 @@ def _vcpkg_build_impl(ctx):
             vcpkg_info.vcpkg_files.files.to_list(),
             vcpkg_current_info.transitive.to_list(),
             overlay_triplets,
+            assets.transitive_files.to_list(),
             external_binaries.transitive_files.to_list(),
             external_transitive.files.to_list(),
             deps_outputs,
@@ -138,6 +140,7 @@ def _vcpkg_build_impl(ctx):
             "__vcpkg_root__": vcpkg_root,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
             "__downloads_root__": "%s/downloads" % vcpkg_repo_root,
+            "__assets__": "%s/assets" % vcpkg_repo_root,
             "__package_output_dir__": paths.dirname(package_output_dir.path),
             "__package_output_basename__": paths.basename(package_output_dir.path),
             # "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
@@ -196,6 +199,7 @@ vcpkg_build = rule(
         "port": attr.label(allow_files = True),
         "buildtree": attr.label(allow_files = True),
         "downloads": attr.label(allow_files = True),
+        "assets": attr.label(providers = [DirectoryInfo]),
         "package_features": attr.string_list(),
         "deps": attr.label_list(providers = [
             VcpkgBuiltPackageInfo,

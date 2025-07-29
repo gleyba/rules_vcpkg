@@ -61,6 +61,7 @@ vcpkg_args=(
   --downloads-root="${buildtrees_tmp}/downloads"
   --x-install-root="${install_root_tmp}"
   --x-packages-root="${packages_dir}"
+  --x-asset-sources="x-script,${VCPKG_EXEC_ROOT}/__assets__/__package_name__/get_asset.sh --dst {dst} --sha512 {sha512}"
 )
 
 if [[ "${VCPKG_DEBUG}" == 1 ]]; then 

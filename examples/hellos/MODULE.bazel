@@ -14,20 +14,22 @@ vcpkg.bootstrap(
     sha256 = "ea2d0f029331ef0f58cb2d87c5e3f2c4606d927c63dc81d56d81a632f3dca45d",
 )
 vcpkg.install(package = "boost-asio")
-vcpkg.install(package = "openssl")
 vcpkg.install(package = "fmt")
-vcpkg.install(package = "folly")
-vcpkg.install(package = "duckdb")
-vcpkg.install(package = "qt")
+vcpkg.install(package = "openssl")
 vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "openssl",
 )
+vcpkg.install(package = "folly")
 vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "folly",
 )
+vcpkg.install(package = "duckdb")
 vcpkg.configure(
+    buildtree_fixups = [
+        "rm -rf ${BUILDTREE_DIR}/src/*.clean/data/csv/glob/crawl/.symbolic_link",
+    ],
     cpus = "HOST_CPUS",
     package = "duckdb",
 )

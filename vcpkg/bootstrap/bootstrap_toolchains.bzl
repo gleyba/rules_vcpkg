@@ -1,5 +1,4 @@
-load("//vcpkg/bootstrap:vcpkg_exec.bzl", "exec_check")
-load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
+load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check")
 
 _BUILD_BAZEL = """\
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
@@ -98,7 +97,6 @@ def _bootstrap_toolchains_impl(rctx):
     rctx.symlink("/usr/bin/awk", "bin/awk")
     rctx.symlink("/usr/bin/vm_stat", "bin/vm_stat")
     rctx.symlink("/usr/bin/find", "bin/find")
-
     rctx.symlink("/usr/sbin/zic", "bin/zic")
 
     if rctx.os.name.startswith("mac"):

@@ -9,6 +9,7 @@ vcpkg_build(
     port = "@{bootstrap_repo}//vcpkg/ports:{package}",
     buildtree = "@{bootstrap_repo}//vcpkg/buildtrees:{package}",
     downloads = "@{bootstrap_repo}//downloads:{package}",
+    assets = "@{bootstrap_repo}//assets/{package}",
     package_features = {features},
     deps = {build_deps}, 
     cpus = "{cpus}",

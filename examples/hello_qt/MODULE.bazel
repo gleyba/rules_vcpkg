@@ -44,13 +44,13 @@ vcpkg.configure(
 )
 vcpkg.configure(
     cpus = "HOST_CPUS",
-    package = "qtbase",
     # This fixup is only mandatory if network usage prohibited in sandbox
     # with `--nosandbox_default_allow_network`
-    repo_fixups = [
+    install_fixups = [
         "mkdir -p ${INSTALL_DIR}/share/qtbase",
         "cp ${PORT_DIR}/cmake/* ${INSTALL_DIR}/share/qtbase",
     ],
+    package = "qtbase",
 )
 vcpkg.configure(
     cpus = "HOST_CPUS",
