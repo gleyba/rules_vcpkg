@@ -1,5 +1,10 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+_COMMON_COPTS = [
+    "-std=c++17",
+    "-mmacosx-version-min=14.0",
+]
+
 config_setting(
     name = "is_release_build",
     values = {
@@ -18,17 +23,20 @@ cc_library(
     name = "package_ctrl",
     srcs = ["package_ctrl.cpp"],
     hdrs = ["package_ctrl.hpp"],
+    copts = _COMMON_COPTS,
 )
 
 cc_library(
     name = "copy_sources",
     srcs = ["copy_sources.cpp"],
     hdrs = ["copy_sources.hpp"],
+    copts = _COMMON_COPTS,
 )
 
 cc_binary(
     name = "prepare_install_dir",
     srcs = ["prepare_install_dir.cpp"],
+    copts = _COMMON_COPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":copy_sources",
@@ -39,5 +47,6 @@ cc_binary(
 cc_binary(
     name = "extract_package_outputs",
     srcs = ["extract_package_outputs.cpp"],
+    copts = _COMMON_COPTS,
     visibility = ["//visibility:public"],
 )

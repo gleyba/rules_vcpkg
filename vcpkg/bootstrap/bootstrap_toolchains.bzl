@@ -36,6 +36,31 @@ def _bootstrap_toolchains_impl(rctx):
             sha256 = "229314c7ef65e9c11d19f84e5f4bb374105a4f21f64ed55e8f403df765ab52a7",
             output = "bin",
         )
+
+        def unpack_archives(prefix):
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:%s/autoconf.zip" % prefix),
+                strip_prefix = "autoconf",
+            )
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:%s/automake.zip" % prefix),
+                strip_prefix = "automake",
+            )
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:%s/libtool.zip" % prefix),
+                strip_prefix = "libtool",
+            )
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/m4.zip" % prefix))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/bison.zip" % prefix))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/flex.zip" % prefix))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/make.zip" % prefix))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/gsed.zip" % prefix))
+            rctx.extract(Label("//vcpkg/bootstrap/archives:%s/autoconf_archive.zip" % prefix))
+            rctx.extract(
+                archive = Label("//vcpkg/bootstrap/archives:%s/pkgconfig.zip" % prefix),
+                strip_prefix = "pkgconfig",
+            )
+
         if rctx.os.arch == "aarch64":
             rctx.download_and_extract(
                 url = "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-aarch64-apple-darwin.tar.gz",
@@ -50,43 +75,34 @@ def _bootstrap_toolchains_impl(rctx):
                 output = "perl",
             )
             rctx.download_and_extract(
+                url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-aarch64-apple-darwin-install_only_stripped.tar.gz",
+                sha256 = "7b32a1368af181ef16b2739f65849bb74d4ef1f324613ad9022d6f6fe3bb25f0",
+                strip_prefix = "python",
+            )
+            unpack_archives("macos/arm64")
+        elif rctx.os.arch == "x86_64":
+            rctx.download_and_extract(
+                url = "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-x86_64-apple-darwin.tar.gz",
+                sha256 = "0a27f09f03811289b9ddcff8c6b7c1bf6e971b5eac3dd536208a40e2c1ea9cd9",
+                strip_prefix = "coreutils-0.1.0-x86_64-apple-darwin",
+                output = "coreutils",
+            )
+            rctx.download_and_extract(
+                url = "https://github.com/skaji/relocatable-perl/releases/download/5.40.0.1/perl-darwin-amd64.tar.xz",
+                sha256 = "bbae274421e61075a20b105434d3bf3cc168fc2fc78da4d24d04235a072cb506",
+                strip_prefix = "perl-darwin-amd64",
+                output = "perl",
+            )
+            rctx.download_and_extract(
                 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
                 sha256 = "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
                 strip_prefix = "python",
             )
-            rctx.extract(
-                archive = Label("//vcpkg/bootstrap/archives:arm64/autoconf.zip"),
-                strip_prefix = "autoconf",
-            )
-            rctx.extract(
-                archive = Label("//vcpkg/bootstrap/archives:arm64/automake.zip"),
-                strip_prefix = "automake",
-            )
-            rctx.extract(
-                archive = Label("//vcpkg/bootstrap/archives:arm64/libtool.zip"),
-                strip_prefix = "libtool",
-            )
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/m4.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/bison.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/flex.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/make.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/gsed.zip"))
-            rctx.extract(Label("//vcpkg/bootstrap/archives:arm64/autoconf_archive.zip"))
-            rctx.extract(
-                archive = Label("//vcpkg/bootstrap/archives:arm64/pkgconfig.zip"),
-                strip_prefix = "pkgconfig",
-            )
+            unpack_archives("macos/amd64")
         else:
             fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
-
-    # rctx.file("cmake/BUILD.bazel", _CMAKE_BUILD_FILE)
-    # rctx.file("coreutils/BUILD.bazel", _COREUTILS_BUILD_FILE)
-    # rctx.file("perl/BUILD.bazel", _PERL_BUILD_FILE)
-    # rctx.file("autoconf/BUILD.bazel", _AUTOCONF_BUILD_FILE)
-    # rctx.file("automake/BUILD.bazel", _AUTOMAKE_BUILD_FILE)
-    # rctx.file("libtool/BUILD.bazel", _LIBTOOL_BUILD_FILE)
 
     rctx.symlink("/bin/bash", "bin/bash")
     rctx.symlink("/bin/sh", "bin/sh")
@@ -105,8 +121,6 @@ def _bootstrap_toolchains_impl(rctx):
         rctx.symlink("/usr/bin/file", "bin/file")
         rctx.symlink("/usr/bin/install_name_tool", "bin/install_name_tool")
         rctx.symlink("/usr/bin/codesign", "bin/codesign")
-
-        # rctx.symlink("/usr/bin/libtool", "bin/libtool")
         rctx.symlink("/usr/bin/ranlib", "bin/ranlib")
         rctx.symlink("/usr/bin/ar", "bin/ar")
         rctx.symlink("/usr/bin/lipo", "bin/lipo")
@@ -114,7 +128,6 @@ def _bootstrap_toolchains_impl(rctx):
         # TODO: support hermetic
         rctx.symlink("/usr/bin/clang", "bin/clang")
         rctx.symlink("/usr/bin/clang++", "bin/clang++")
-        # rctx.symlink("/usr/bin/python3", "bin/python3")
 
     else:
         fail("Unsupported OS: %s" % rctx.os.arch)
@@ -135,17 +148,6 @@ def _bootstrap_toolchains_impl(rctx):
             continue
 
         symlink_rel("../coreutils/coreutils", "bin/%s" % coretool)
-
-    # def symlink_all_bins(dir):
-    #     for bin in rctx.path("%s/bin" % dir).readdir():
-    #         symlink_rel(
-    #             "../%s/bin/%s" % (dir, bin.basename),
-    #             "bin/%s" % bin.basename,
-    #         )
-
-    # symlink_all_bins("autoconf")
-    # symlink_all_bins("automake")
-    # symlink_all_bins("libtool")
 
     rctx.file(
         "BUILD.bazel",

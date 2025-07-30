@@ -19,6 +19,9 @@ def _platform_prefix(rctx):
     if _is_arm64(rctx):
         arch = "arm64"
 
+    if _is_amd64(rctx):
+        arch = "amd64"
+
     if not os or not arch:
         fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
 
@@ -31,7 +34,10 @@ def _platform_targets(rctx):
 
     arch = None
     if _is_arm64(rctx):
-        arch = "@platforms//cpu:arm64"
+        arch = "@platforms//cpu:aarch64"
+
+    if _is_amd64(rctx):
+        arch = "@platforms//cpu:x86_64"
 
     if not os or not arch:
         fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))

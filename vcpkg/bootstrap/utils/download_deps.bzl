@@ -55,12 +55,12 @@ def _try_download_something(rctx, output, tmpdir, depend_info):
             return None, "Can't find portfile.cmake for %s" % port
 
         result, err = parse_calls(
-            rctx,
-            portfile,
+            rctx.read(portfile),
             "%s portfile.cmake" % port,
-            "vcpkg_download_distfile",
-            "URLS",
-            "SHA512",
+            {
+                "vcpkg_download_distfile": ["URLS", "SHA512"],
+                "set": None,
+            },
         )
 
         if err:
