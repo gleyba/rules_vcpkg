@@ -1,7 +1,8 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "parse_calls")
+load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "parse_calls", "unwrap_func_args")
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
+load("//vcpkg/vcpkg_utils:logging.bzl", "L")
 
 _GET_PORT_ASSETS_SH = """\
 #!/bin/bash
@@ -37,7 +38,8 @@ directory(
 )
 """
 
-def _try_download_something(rctx, output, tmpdir, depend_info):
+def _try_download_something(rctx, output, depend_info):
+    errors_top = []
     for port in depend_info.keys():
         rctx.file(
             "%s/assets/%s/get_asset.sh" % (output, port),
@@ -54,44 +56,57 @@ def _try_download_something(rctx, output, tmpdir, depend_info):
         if not portfile.exists:
             return None, "Can't find portfile.cmake for %s" % port
 
-        result, err = parse_calls(
+        results, errors = parse_calls(
             rctx.read(portfile),
             "%s portfile.cmake" % port,
-            {
-                "vcpkg_download_distfile": ["URLS", "SHA512"],
-                "set": None,
-            },
+            [
+                "set",
+                ("vcpkg_download_distfile", ["URLS", "SHA512"]),
+            ],
         )
 
-        if err:
-            return None, err
+        if errors:
+            errors_top += errors
 
-        if not result:
+        if not results:
             continue
 
         vcpkg_json = rctx.path("%s/vcpkg/ports/%s/vcpkg.json" % (output, port))
         if not vcpkg_json.exists:
-            return None, "Can't find vcpkg.json for %s" % port
+            errors_top.append("%s: can't find vcpkg.json for %s" % port)
+            continue
 
         info = json.decode(rctx.read(vcpkg_json))
         if not info:
-            return "Can't decode vcpkg.json for %s" % port
+            errors_top.append("%s: can't decode vcpkg.json" % port)
+            continue
 
         if not "version" in info:
-            return "Can't find 'version' in vcpkg.json for %s" % port
+            errors_top.append("%s: can't find 'version' in vcpkg.json" % port)
+            continue
 
-        for args in result:
-            sha512 = args["SHA512"]
+        results, errors = unwrap_func_args(results, {"VERSION": info["version"]})
+        if errors:
+            errors_top += [
+                "%s: %s" % (port, error)
+                for error in errors
+            ]
+
+        if not results:
+            continue
+
+        for args in results:
+            sha512 = args[1]["SHA512"]
             asset_location = "collect_assets/%s" % sha512
             rctx.download(
-                url = args["URLS"].replace("${VERSION}", info["version"]),
+                url = args[1]["URLS"],
                 output = asset_location,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
             )
 
             _, err = exec_check(
                 rctx,
-                "Moving %s to downloads",
+                "Moving %s to assets" % asset_location,
                 [
                     "ln",
                     asset_location,
@@ -105,9 +120,9 @@ def _try_download_something(rctx, output, tmpdir, depend_info):
             )
 
             if err:
-                return err
+                errors_top.append("%s: %s" % (port, err))
 
-    return None
+    return errors_top
 
 _DOWNLOAD_TRY_PREFIX = "Trying to download "
 _DOWNLOAD_TRY_POSTFIX = " using asset cache script"
@@ -236,7 +251,7 @@ else
 fi
 """
 
-def download_deps(rctx, output, tmpdir, depend_info, external_bins):
+def download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose):
     def cleanup():
         rctx.delete("collect_assets")
 
@@ -254,9 +269,9 @@ def download_deps(rctx, output, tmpdir, depend_info, external_bins):
         if err:
             return on_error(err)
 
-    err = _try_download_something(rctx, output, tmpdir, depend_info)
-    if err:
-        return on_error(err)
+    errors = _try_download_something(rctx, output, depend_info)
+    if verbose:
+        print(L.warn(*errors))
 
     downloads, err = _run_install_loop(rctx, output, tmpdir, external_bins)
     if err:

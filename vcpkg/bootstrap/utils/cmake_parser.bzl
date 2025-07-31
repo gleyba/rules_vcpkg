@@ -1,5 +1,5 @@
 def _is_whitespace(ch):
-    return ch in [" ", "\n"]
+    return ch in [" ", "\n", "\r"]
 
 def _parse_tokens(body):
     body_len = len(body)
@@ -105,6 +105,8 @@ def _create_func_tracking(func, mnemo):
             "%s (function - %s)" % (mnemo, func[0]),
             *func[1]
         )
+    else:
+        return None, "Unknown function type: %s" % func_type
 
     match_state = _match_state(name)
 
@@ -124,22 +126,29 @@ def _create_func_tracking(func, mnemo):
         parse = parse_func,
         process_next_char = lambda ch: process_next_char(match_state, ch),
         clean_state = lambda: match_state.clean_state(),
-    )
+    ), None
 
 def _create_func_trackings(funcs_defs, mnemo):
-    funcs_trackings = [
-        _create_func_tracking(func, mnemo)
-        for func in funcs_defs
-    ]
+    funcs_trackings = []
+    errors = []
+
+    for func in funcs_defs:
+        func_tracking, err = _create_func_tracking(func, mnemo)
+        if err:
+            errors.append(err)
+        if func_tracking:
+            funcs_trackings.append(func_tracking)
 
     return sorted(
         funcs_trackings,
         key = lambda x: len(x.name),
         reverse = True,
-    )
+    ), errors
 
 def _create_tracking(funcs_defs, mnemo):
-    funcs_trackings = _create_func_trackings(funcs_defs, mnemo)
+    funcs_trackings, errors = _create_func_trackings(funcs_defs, mnemo)
+    if not funcs_trackings:
+        return None, errors
 
     def clean_state(funcs_trackings):
         for func_tracking in funcs_trackings:
@@ -157,14 +166,15 @@ def _create_tracking(funcs_defs, mnemo):
 
     return struct(
         process_next_char = lambda ch: process_next_char(funcs_trackings, ch),
-    )
+    ), errors
 
 def parse_calls(data, mnemo, funcs_defs):
     results = []
-    errors = []
     data_len = len(data)
 
-    tracking = _create_tracking(funcs_defs, mnemo)
+    tracking, errors = _create_tracking(funcs_defs, mnemo)
+    if not tracking:
+        return None, errors
 
     func_started = None
     for idx in range(data_len):
@@ -174,11 +184,11 @@ def parse_calls(data, mnemo, funcs_defs):
                 continue
 
             result, err = func_started.func.parse(data[func_started.pos:idx])
-            func_started = None
             if err:
                 errors.append(err)
             if result:
-                results.append(result)
+                results.append((func_started.func.name, result))
+            func_started = None
         else:
             func_to_start = tracking.process_next_char(data[idx])
             if func_to_start == None:
@@ -191,5 +201,42 @@ def parse_calls(data, mnemo, funcs_defs):
 
     if func_started:
         errors.append("Parsing %s: can't finish parsing func - %s" % (mnemo, mnemo))
+
+    return results, errors
+
+def _substitute_vars(result, sunstitutions):
+    for key, value in sunstitutions.items():
+        result = result.replace("${%s}" % key, value)
+
+    err = None
+    if "${" in result:
+        err = "Not all substitutions unwrapped: %s" % result
+
+    return result, err
+
+def unwrap_func_args(func_parse_results, sunstitutions = {}):
+    results = []
+    errors = []
+    for result in func_parse_results:
+        if result[0] == "set":
+            if len(result[1]) != 2:
+                errors.append("Set doesn't have 2 arguments: %s" % result[1])
+                continue
+
+            value, err = _substitute_vars(result[1][1], sunstitutions)
+            if err:
+                errors.append(err)
+            if value:
+                sunstitutions[result[1][0]] = value
+        else:
+            result_args = {}
+            for key, value in result[1].items():
+                value, err = _substitute_vars(value, sunstitutions)
+                if err:
+                    errors.append(err)
+                if value:
+                    result_args[key] = value
+
+            results.append((result[0], result_args))
 
     return results, errors

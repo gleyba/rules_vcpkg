@@ -12,6 +12,7 @@ vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
     release = "2025.06.13",
     sha256 = "ea2d0f029331ef0f58cb2d87c5e3f2c4606d927c63dc81d56d81a632f3dca45d",
+    verbose = True,
 )
 vcpkg.install(package = "boost-asio")
 vcpkg.install(package = "fmt")

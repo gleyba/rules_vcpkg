@@ -241,7 +241,8 @@ def _bootstrap(
         packages,
         packages_install_fixups,
         packages_buildtree_fixups,
-        packages_ports_patches):
+        packages_ports_patches,
+        verbose):
     pu = platform_utils(rctx)
 
     _download_vcpkg_tool(rctx, output, pu)
@@ -254,7 +255,7 @@ def _bootstrap(
     if err:
         return err
 
-    downloads_per_package, err = download_deps(rctx, output, tmpdir, depend_info, external_bins)
+    downloads_per_package, err = download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose)
     if err:
         return err
 
@@ -316,6 +317,7 @@ def _bootrstrap_impl(rctx):
         packages_install_fixups = rctx.attr.packages_install_fixups,
         packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
         packages_ports_patches = rctx.attr.packages_ports_patches,
+        verbose = rctx.attr.verbose,
     )
 
     rctx.delete(tmpdir)
@@ -359,6 +361,10 @@ bootstrap = repository_rule(
         ),
         "external_bins": attr.label(
             mandatory = True,
+        ),
+        "verbose": attr.bool(
+            default = False,
+            doc = "If to print debug info",
         ),
     },
 )

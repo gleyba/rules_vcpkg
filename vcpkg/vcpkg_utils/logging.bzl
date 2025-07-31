@@ -1,6 +1,9 @@
-def _warn(msg):
-    print("{red}WARN:{nc} {msg}".format(red = "\033[0;31m", msg = msg, nc = "\033[0m"))
+def _join(values, red):
+    result = []
+    for value in values:
+        result.append("{red}WARN:{nc} {msg}".format(red = red, msg = value, nc = "\033[0m"))
+    return "\n".join(result)
 
 L = struct(
-    warn = _warn,
+    warn = lambda *msgs: "\n%s" % _join(msgs, "\033[0;31m"),
 )

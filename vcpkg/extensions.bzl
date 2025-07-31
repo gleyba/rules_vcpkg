@@ -7,6 +7,7 @@ _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
     "commit": attr.string(doc = "The vcpkg commit, either this or version must be specified"),
     "sha256": attr.string(doc = "Shasum of vcpkg"),
+    "verbose": attr.bool(doc = "If to print debug info", default = False),
 })
 
 _install = tag_class(attrs = {
@@ -107,6 +108,7 @@ def _vcpkg(mctx):
         packages_buildtree_fixups = packages_buildtree_fixups,
         packages_ports_patches = packages_ports_patches,
         external_bins = "@vcpkg_external//bin",
+        verbose = cur_bootstrap.verbose,
     )
 
     declare(
