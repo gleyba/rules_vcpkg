@@ -81,7 +81,12 @@ if [ "${VCPKG_DEBUG}" == 1 ] && [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]; then
     exit $retVal
   fi
   set -e
-  cp -r "$packages_dir/__package_output_basename__" "__package_output_dir__"
+  cp -r "${packages_dir}/__package_output_basename__" "__package_output_dir__"
 else
-  mv "$packages_dir/__package_output_basename__" "__package_output_dir__"
+  mv "${packages_dir}/__package_output_basename__" "__package_output_dir__"
 fi
+
+__validate_package_output_bin__ \
+  "${packages_dir}/__package_output_basename__" \
+  "__package_output_dir__" \
+  "__port_root__"

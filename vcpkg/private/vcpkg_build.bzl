@@ -40,6 +40,7 @@ def _vcpkg_build_impl(ctx):
 
     # current_binaries = vcpkg_current_info.binaries.to_list()
     assets = ctx.attr.assets[DirectoryInfo]
+    port = ctx.attr.port[DirectoryInfo]
     external_binaries = ctx.attr._external_bins[DirectoryInfo]
     external_transitive = ctx.attr._externals[DefaultInfo]
 
@@ -90,7 +91,7 @@ def _vcpkg_build_impl(ctx):
     inputs = [packages_list_file] + [
         item
         for sublist in [
-            ctx.files.port,
+            port.transitive_files.to_list(),
             ctx.files.buildtree,
             ctx.files.downloads,
             # current_binaries,
@@ -134,10 +135,12 @@ def _vcpkg_build_impl(ctx):
             # "__cur_bin_dir__": cur_bin_dir,
             "__vcpkg_bin__": vcpkg_info.vcpkg_tool.path,
             "__prepare_install_dir_bin__": ctx.executable._prepare_install_dir.path,
+            "__validate_package_output_bin__": ctx.executable._validate_package_output.path,
             "__packages_list_file__": packages_list_file.path,
             "__package_name__": ctx.attr.package_name,
             "__build_target_name__": build_target_name,
             "__vcpkg_root__": vcpkg_root,
+            "__port_root__": port.path,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
             "__downloads_root__": "%s/downloads" % vcpkg_repo_root,
             "__assets__": "%s/assets" % vcpkg_repo_root,
@@ -164,6 +167,7 @@ def _vcpkg_build_impl(ctx):
             vcpkg_info.vcpkg_tool,
             call_vcpkg_wrapper,
             ctx.executable._prepare_install_dir,
+            ctx.executable._validate_package_output,
         ],
         inputs = inputs,
         outputs = [package_output_dir],
@@ -196,7 +200,7 @@ vcpkg_build = rule(
     implementation = _vcpkg_build_impl,
     attrs = {
         "package_name": attr.string(mandatory = True),
-        "port": attr.label(allow_files = True),
+        "port": attr.label(providers = [DirectoryInfo]),
         "buildtree": attr.label(allow_files = True),
         "downloads": attr.label(allow_files = True),
         "assets": attr.label(providers = [DirectoryInfo]),
@@ -219,6 +223,12 @@ vcpkg_build = rule(
             executable = True,
             cfg = "exec",
             doc = "Tool to prepare vcpkg install directory structure",
+        ),
+        "_validate_package_output": attr.label(
+            default = "@rules_vcpkg//vcpkg/vcpkg_utils:validate_package_output",
+            executable = True,
+            cfg = "exec",
+            doc = "Tool to validate vcpkg package output directory",
         ),
         "_debug": attr.label(
             providers = [BuildSettingInfo],

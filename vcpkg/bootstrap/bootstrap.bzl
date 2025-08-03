@@ -175,7 +175,7 @@ filegroup(
 """
 
 _PORT_BAZEL_TPL = """\
-filegroup(
+directory(
     name = "{port}",
     srcs = glob(["{port}/**/*"]),
     visibility = ["//visibility:public"],
@@ -225,6 +225,8 @@ def _write_templates(
     rctx.file("%s/vcpkg/scripts/BUILD.bazel" % output, _SCRIPTS_BAZEL)
     rctx.file("%s/vcpkg/triplets/BUILD.bazel" % output, _TRIPLETS_BAZEL)
     rctx.file("%s/vcpkg/ports/BUILD.bazel" % output, "\n".join([
+        """load("@bazel_skylib//rules/directory:directory.bzl", "directory")""",
+    ] + [
         _PORT_BAZEL_TPL.format(port = port)
         for port in depend_info.keys()
     ]))

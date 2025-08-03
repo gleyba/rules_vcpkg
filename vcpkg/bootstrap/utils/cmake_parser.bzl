@@ -238,8 +238,8 @@ def _parse_func_args(tokens, mnemo, *args):
 
     return results, errors
 
-def _substitute_var(result, sunstitutions):
-    for key, value in sunstitutions.items():
+def _substitute_var(result, substitutions):
+    for key, value in substitutions.items():
         result = result.replace("${%s}" % key, value)
 
     err = None
@@ -251,7 +251,7 @@ def _substitute_var(result, sunstitutions):
 def _wannabe_cmake_parser(data, mnemo, funcs, substitutions = {}):
     def _set(*tokens):
         if len(tokens) != 2:
-            return ["Set doesn't have 2 arguments: %s" % tokens]
+            return ["Set doesn't have 2 arguments: %s" % str(tokens)]
 
         value, err = _substitute_var(tokens[1], substitutions)
         if value != None:
@@ -262,10 +262,33 @@ def _wannabe_cmake_parser(data, mnemo, funcs, substitutions = {}):
 
         return []
 
+    def _replace(*tokens):
+        tokens_len = len(tokens)
+        if tokens_len != 5:
+            return ["len(tokens) == %s, but expected 5 for string(REPLACE, ..." % tokens_len]
+
+        if tokens[0] != "REPLACE":
+            return ["Can only process string(REPLACE, ..."]
+
+        errors = []
+        value, err = _substitute_var(tokens[4], substitutions)
+        if err != None:
+            errors.append(err)
+        if not value:
+            return errors
+
+        substitutions[tokens[3]] = value.replace(tokens[1], tokens[2])
+
+        return errors
+
     funcs_defs = [
         struct(
             name = "set",
             call = _set,
+        ),
+        struct(
+            name = "string",
+            call = _replace,
         ),
     ]
 

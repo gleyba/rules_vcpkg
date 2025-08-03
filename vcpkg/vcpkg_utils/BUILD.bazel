@@ -50,3 +50,10 @@ cc_binary(
     copts = _COMMON_COPTS,
     visibility = ["//visibility:public"],
 )
+
+cc_binary(
+    name = "validate_package_output",
+    srcs = ["validate_package_output.cpp"],
+    copts = _COMMON_COPTS,
+    visibility = ["//visibility:public"],
+)

@@ -11,8 +11,6 @@ inline bool ends_with(const std::string& value, const std::string& ending) {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-#include <iostream>
-
 int main(int argc, char ** argv) {
     fs::path package_output_dir { argv[1] };
     fs::path output_dir { argv[2] };

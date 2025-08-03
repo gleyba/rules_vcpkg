@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "parse_calls", "unwrap_func_args")
+load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "cmake_parser")
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:logging.bzl", "L")
@@ -56,21 +56,6 @@ def _try_download_something(rctx, output, depend_info):
         if not portfile.exists:
             return None, "Can't find portfile.cmake for %s" % port
 
-        results, errors = parse_calls(
-            rctx.read(portfile),
-            "%s portfile.cmake" % port,
-            [
-                "set",
-                ("vcpkg_download_distfile", ["URLS", "SHA512"]),
-            ],
-        )
-
-        if errors:
-            errors_top += errors
-
-        if not results:
-            continue
-
         vcpkg_json = rctx.path("%s/vcpkg/ports/%s/vcpkg.json" % (output, port))
         if not vcpkg_json.exists:
             errors_top.append("%s: can't find vcpkg.json for %s" % port)
@@ -85,21 +70,10 @@ def _try_download_something(rctx, output, depend_info):
             errors_top.append("%s: can't find 'version' in vcpkg.json" % port)
             continue
 
-        results, errors = unwrap_func_args(results, {"VERSION": info["version"]})
-        if errors:
-            errors_top += [
-                "%s: %s" % (port, error)
-                for error in errors
-            ]
-
-        if not results:
-            continue
-
-        for args in results:
-            sha512 = args[1]["SHA512"]
+        def vcpkg_download_distfile(urls, sha512):
             asset_location = "collect_assets/%s" % sha512
             rctx.download(
-                url = args[1]["URLS"],
+                url = urls,
                 output = asset_location,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
             )
@@ -120,7 +94,27 @@ def _try_download_something(rctx, output, depend_info):
             )
 
             if err:
-                errors_top.append("%s: %s" % (port, err))
+                return [err]
+            else:
+                return []
+
+        errors = cmake_parser(
+            rctx.read(portfile),
+            "%s portfile.cmake" % port,
+            [
+                struct(
+                    name = "vcpkg_download_distfile",
+                    args = ["URLS", "SHA512"],
+                    call = vcpkg_download_distfile,
+                ),
+            ],
+            substitutions = {
+                "VERSION": info["version"],
+            },
+        )
+
+        if errors:
+            errors_top += errors
 
     return errors_top
 

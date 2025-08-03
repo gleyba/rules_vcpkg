@@ -10,8 +10,8 @@ local_path_override(
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
-    release = "2025.06.13",
-    sha256 = "ea2d0f029331ef0f58cb2d87c5e3f2c4606d927c63dc81d56d81a632f3dca45d",
+    release = "2025.07.25",
+    sha256 = "dff617c636a6519d4f083e658d404970c9da7d940a974e1d17f855f26a334e2f",
     verbose = True,
 )
 vcpkg.install(package = "boost-asio")
