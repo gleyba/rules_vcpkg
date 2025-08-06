@@ -25,6 +25,9 @@ vcpkg.install(package = "folly")
 vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "folly",
+    src_patches = [
+        "//hello_folly:folly_src.patch",
+    ],
 )
 vcpkg.install(package = "duckdb")
 vcpkg.configure(

@@ -37,6 +37,9 @@ Environment variable 'BUILDTREE_DIR' and will be available.
     "port_patches": attr.label_list(
         doc = "Patches to apply to package port",
     ),
+    "src_patches": attr.label_list(
+        doc = "Patches to apply to package src dir",
+    ),
 })
 
 _configure_prefixed = tag_class(attrs = {
@@ -51,6 +54,7 @@ def _vcpkg(mctx):
     packages_install_fixups = {}
     packages_buildtree_fixups = {}
     packages_ports_patches = {}
+    packages_src_patches = {}
     pp_to_include_postfixes = {}
     for mod in mctx.modules:
         for bootstrap_defs in mod.tags.bootstrap:
@@ -86,6 +90,9 @@ def _vcpkg(mctx):
             for patch in configure.port_patches:
                 packages_ports_patches[patch] = configure.package
 
+            for patch in configure.src_patches:
+                packages_src_patches[patch] = configure.package
+
         for configure_prefixed in mod.tags.configure_prefixed:
             add_or_extend_list_in_dict(
                 pp_to_include_postfixes,
@@ -107,6 +114,7 @@ def _vcpkg(mctx):
         packages_install_fixups = packages_install_fixups,
         packages_buildtree_fixups = packages_buildtree_fixups,
         packages_ports_patches = packages_ports_patches,
+        packages_src_patches = packages_src_patches,
         external_bins = "@vcpkg_external//bin",
         verbose = cur_bootstrap.verbose,
     )

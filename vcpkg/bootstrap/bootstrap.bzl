@@ -32,7 +32,12 @@ SCRIPT_DIR=$(dirname "$0")
 exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
-def _initialize(rctx, output, packages, packages_ports_patches, pu):
+def _initialize(
+        rctx,
+        output,
+        packages,
+        packages_ports_patches,
+        pu):
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
@@ -70,6 +75,7 @@ def _initialize(rctx, output, packages, packages_ports_patches, pu):
                 ),
             ],
         )
+        rctx.watch(patch_file)
 
 def _perform_install_fixups(rctx, output, tmpdir, install_fixups, pu):
     for package, sh_lines in install_fixups.items():
@@ -89,7 +95,11 @@ def _perform_install_fixups(rctx, output, tmpdir, install_fixups, pu):
             },
         )
 
-def _perform_buildtree_fixups(rctx, output, buildtree_fixups):
+def _perform_buildtree_fixups(
+        rctx,
+        output,
+        buildtree_fixups,
+        packages_src_patches):
     for package, sh_lines in buildtree_fixups.items():
         rctx.file(
             "%s/buildtree_fixups/%s.sh" % (output, package),
@@ -105,6 +115,39 @@ def _perform_buildtree_fixups(rctx, output, buildtree_fixups):
                 "BUILDTREE_DIR": "%s/vcpkg/buildtrees/%s" % (output, package),
             },
         )
+
+    for patch_file, package in packages_src_patches.items():
+        src_dir = rctx.path("%s/vcpkg/buildtrees/%s/src" % (
+            output,
+            package,
+        ))
+
+        if not src_dir.exists:
+            return "There is no src dir in 'vcpkg/buildtrees/%s', but patch requested" % package
+
+        if not src_dir.is_dir:
+            return "'vcpkg/buildtrees/%s' is not a directory, but patch requested" % package
+
+        clean_dir = None
+        for inner in src_dir.readdir():
+            if inner.basename.endswith(".clean"):
+                clean_dir = inner
+                break
+
+        if not clean_dir or not clean_dir.is_dir:
+            return "'vcpkg/buildtrees/%s' contains not '.clean' postfixed subdirectory, but patch requested" % package
+
+        patch(
+            rctx,
+            patches = [patch_file],
+            patch_args = [
+                "-d",
+                clean_dir,
+            ],
+        )
+        rctx.watch(patch_file)
+
+    return None
 
 _BUILD_BAZEL_TPL = """\
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
@@ -226,6 +269,7 @@ def _write_templates(
     rctx.file("%s/vcpkg/triplets/BUILD.bazel" % output, _TRIPLETS_BAZEL)
     rctx.file("%s/vcpkg/ports/BUILD.bazel" % output, "\n".join([
         """load("@bazel_skylib//rules/directory:directory.bzl", "directory")""",
+        "",
     ] + [
         _PORT_BAZEL_TPL.format(port = port)
         for port in depend_info.keys()
@@ -244,6 +288,7 @@ def _bootstrap(
         packages_install_fixups,
         packages_buildtree_fixups,
         packages_ports_patches,
+        packages_src_patches,
         verbose):
     pu = platform_utils(rctx)
 
@@ -261,7 +306,9 @@ def _bootstrap(
     if err:
         return err
 
-    _perform_buildtree_fixups(rctx, output, packages_buildtree_fixups)
+    err = _perform_buildtree_fixups(rctx, output, packages_buildtree_fixups, packages_src_patches)
+    if err:
+        return err
 
     _write_templates(
         rctx,
@@ -319,6 +366,7 @@ def _bootrstrap_impl(rctx):
         packages_install_fixups = rctx.attr.packages_install_fixups,
         packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
         packages_ports_patches = rctx.attr.packages_ports_patches,
+        packages_src_patches = rctx.attr.packages_src_patches,
         verbose = rctx.attr.verbose,
     )
 
@@ -356,6 +404,10 @@ bootstrap = repository_rule(
         "packages_ports_patches": attr.label_keyed_string_dict(
             mandatory = False,
             doc = "Patches to apply to port directory",
+        ),
+        "packages_src_patches": attr.label_keyed_string_dict(
+            mandatory = False,
+            doc = "Patches to apply to src directory",
         ),
         "sha256": attr.string(
             mandatory = False,

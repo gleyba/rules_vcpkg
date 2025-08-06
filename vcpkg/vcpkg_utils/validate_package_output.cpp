@@ -7,10 +7,9 @@ namespace fs = std::filesystem;
 int main(int argc, char ** argv) {
     std::string package_output_origin_dir_str { argv[1] };
     fs::path package_output_origin_dir { package_output_origin_dir_str };
-    fs::path package_output_dir { argv[2] };
-    fs::path port_dir_str { argv[3] };
+    fs::path port_dir_str { argv[2] };
 
-    for (const auto& dir_entry : fs::recursive_directory_iterator{package_output_dir}) {
+    for (const auto& dir_entry : fs::recursive_directory_iterator{package_output_origin_dir}) {
         fs::path entry_path = dir_entry.path();
         if (!fs::is_symlink(entry_path)) {
             continue;
@@ -25,7 +24,7 @@ int main(int argc, char ** argv) {
         if (link_destination_str.find(package_output_origin_dir_str) == 0) {
             fs::remove(entry_path);
             fs::create_symlink(
-                entry_path.lexically_relative(package_output_dir.lexically_relative(link_destination)),
+                entry_path.lexically_relative(package_output_origin_dir.lexically_relative(link_destination)),
                 entry_path
             );
             continue;

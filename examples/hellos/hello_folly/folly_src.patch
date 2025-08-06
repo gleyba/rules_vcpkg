@@ -1,0 +1,15 @@
+diff --git CMake/folly-deps.cmake CMake/folly-deps.cmake
+index 7f98a61..b399091 100644
+--- CMake/folly-deps.cmake
++++ CMake/folly-deps.cmake
+@@ -195,6 +195,10 @@ CHECK_INCLUDE_FILE_CXX(elf.h FOLLY_HAVE_ELF)
+ find_package(Backtrace)
+ 
+ set(FOLLY_HAVE_BACKTRACE ${Backtrace_FOUND})
++if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
++  set(FOLLY_HAVE_BACKTRACE 1)
++endif ()
++
+ set(FOLLY_HAVE_DWARF ${LIBDWARF_FOUND})
+ if (NOT WIN32 AND NOT APPLE)
+   set(FOLLY_USE_SYMBOLIZER ON)
