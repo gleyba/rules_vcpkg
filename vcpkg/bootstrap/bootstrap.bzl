@@ -8,17 +8,17 @@ load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
-def _download_vcpkg_tool(rctx, output, pu):
+def _download_vcpkg_tool(rctx, bootstrap_ctx):
     tool_meta = {
         line.split("=")[0]: line.split("=")[1]
-        for line in rctx.read("%s/vcpkg/scripts/vcpkg-tool-metadata.txt" % output).split("\n")
+        for line in rctx.read("%s/vcpkg/scripts/vcpkg-tool-metadata.txt" % bootstrap_ctx.output).split("\n")
         if line
     }
 
     rctx.download(
-        url = pu.downloads.url_tpl % tool_meta["VCPKG_TOOL_RELEASE_TAG"],
-        output = "%s/vcpkg/vcpkg" % output,
-        integrity = "sha512-%s" % base64_encode_hexstr(tool_meta[pu.downloads.sha_key]),
+        url = bootstrap_ctx.pu.downloads.url_tpl % tool_meta["VCPKG_TOOL_RELEASE_TAG"],
+        output = "%s/vcpkg/vcpkg" % bootstrap_ctx.output,
+        integrity = "sha512-%s" % base64_encode_hexstr(tool_meta[bootstrap_ctx.pu.downloads.sha_key]),
         executable = True,
     )
 
@@ -32,16 +32,11 @@ SCRIPT_DIR=$(dirname "$0")
 exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
-def _initialize(
-        rctx,
-        output,
-        packages,
-        packages_ports_patches,
-        pu):
+def _initialize(rctx, bootstrap_ctx):
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
-            "dependencies": packages,
+            "dependencies": bootstrap_ctx.packages,
         }),
     )
 
@@ -53,34 +48,34 @@ def _initialize(
 
     rctx.template(
         "%s/overlay_triplets/%s.cmake" % (
-            output,
-            pu.cmake_definitions.triplet,
+            bootstrap_ctx.output,
+            bootstrap_ctx.pu.cmake_definitions.triplet,
         ),
-        pu.triplet_template,
-        substitutions = pu.cmake_definitions.substitutions | format_additions(
+        bootstrap_ctx.pu.triplet_template,
+        substitutions = bootstrap_ctx.pu.cmake_definitions.substitutions | format_additions(
             {},
             DEFAULT_TRIPLET_SETS,
         ),
     )
 
-    for patch_file, package in packages_ports_patches.items():
+    for patch_file, package in bootstrap_ctx.packages_ports_patches.items():
         patch(
             rctx,
             patches = [patch_file],
             patch_args = [
                 "-d",
                 "%s/vcpkg/ports/%s" % (
-                    output,
+                    bootstrap_ctx.output,
                     package,
                 ),
             ],
         )
         rctx.watch(patch_file)
 
-def _perform_install_fixups(rctx, output, tmpdir, install_fixups, pu):
-    for package, sh_lines in install_fixups.items():
+def _perform_install_fixups(rctx, bootstrap_ctx):
+    for package, sh_lines in bootstrap_ctx.packages_install_fixups.items():
         rctx.file(
-            "%s/install_fixups/%s.sh" % (output, package),
+            "%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package),
             content = "\n".join([
                 "#!/usr/bin/env bash",
                 "set -eu",
@@ -88,21 +83,20 @@ def _perform_install_fixups(rctx, output, tmpdir, install_fixups, pu):
             executable = True,
         )
         rctx.execute(
-            ["%s/install_fixups/%s.sh" % (output, package)],
+            ["%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package)],
             environment = {
-                "PORT_DIR": "%s/vcpkg/ports/%s" % (output, package),
-                "INSTALL_DIR": "%s/install/%s" % (tmpdir, pu.prefix),
+                "PORT_DIR": "%s/vcpkg/ports/%s" % (bootstrap_ctx.output, package),
+                "INSTALL_DIR": "%s/install/%s" % (
+                    bootstrap_ctx.tmpdir,
+                    bootstrap_ctx.pu.prefix,
+                ),
             },
         )
 
-def _perform_buildtree_fixups(
-        rctx,
-        output,
-        buildtree_fixups,
-        packages_src_patches):
-    for package, sh_lines in buildtree_fixups.items():
+def _perform_buildtree_fixups(rctx, bootstrap_ctx):
+    for package, sh_lines in bootstrap_ctx.packages_buildtree_fixups.items():
         rctx.file(
-            "%s/buildtree_fixups/%s.sh" % (output, package),
+            "%s/buildtree_fixups/%s.sh" % (bootstrap_ctx.output, package),
             content = "\n".join([
                 "#!/usr/bin/env bash",
                 "set -eu",
@@ -110,15 +104,15 @@ def _perform_buildtree_fixups(
             executable = True,
         )
         rctx.execute(
-            ["%s/buildtree_fixups/%s.sh" % (output, package)],
+            ["%s/buildtree_fixups/%s.sh" % (bootstrap_ctx.output, package)],
             environment = {
-                "BUILDTREE_DIR": "%s/vcpkg/buildtrees/%s" % (output, package),
+                "BUILDTREE_DIR": "%s/vcpkg/buildtrees/%s" % (bootstrap_ctx.output, package),
             },
         )
 
-    for patch_file, package in packages_src_patches.items():
+    for patch_file, package in bootstrap_ctx.packages_src_patches.items():
         src_dir = rctx.path("%s/vcpkg/buildtrees/%s/src" % (
-            output,
+            bootstrap_ctx.output,
             package,
         ))
 
@@ -241,21 +235,16 @@ filegroup(
 )
 """
 
-def _write_templates(
-        rctx,
-        output,
-        depend_info,
-        downloads_per_package,
-        pu):
-    rctx.file("%s/BUILD.bazel" % output, _BUILD_BAZEL_TPL.format(
-        os = pu.targets.os,
-        arch = pu.targets.arch,
-        host_cpu_count = pu.host_cpus_count(),
+def _write_templates(rctx, bootstrap_ctx, depend_info, downloads_per_package):
+    rctx.file("%s/BUILD.bazel" % bootstrap_ctx.output, _BUILD_BAZEL_TPL.format(
+        os = bootstrap_ctx.pu.targets.os,
+        arch = bootstrap_ctx.pu.targets.arch,
+        host_cpu_count = bootstrap_ctx.pu.host_cpus_count(),
     ))
 
-    rctx.file("%s/vcpkg/BUILD.bazel" % output, _VCPKG_BAZEL)
+    rctx.file("%s/vcpkg/BUILD.bazel" % bootstrap_ctx.output, _VCPKG_BAZEL)
 
-    rctx.file("%s/downloads/BUILD.bazel" % output, "\n".join([
+    rctx.file("%s/downloads/BUILD.bazel" % bootstrap_ctx.output, "\n".join([
         _PACKAGE_DOWNLOAD_TPL.format(
             package_name = package_name,
             downloads = format_inner_list(
@@ -265,58 +254,40 @@ def _write_templates(
         )
         for package_name, downloads in downloads_per_package.items()
     ]))
-    rctx.file("%s/vcpkg/scripts/BUILD.bazel" % output, _SCRIPTS_BAZEL)
-    rctx.file("%s/vcpkg/triplets/BUILD.bazel" % output, _TRIPLETS_BAZEL)
-    rctx.file("%s/vcpkg/ports/BUILD.bazel" % output, "\n".join([
+    rctx.file("%s/vcpkg/scripts/BUILD.bazel" % bootstrap_ctx.output, _SCRIPTS_BAZEL)
+    rctx.file("%s/vcpkg/triplets/BUILD.bazel" % bootstrap_ctx.output, _TRIPLETS_BAZEL)
+    rctx.file("%s/vcpkg/ports/BUILD.bazel" % bootstrap_ctx.output, "\n".join([
         """load("@bazel_skylib//rules/directory:directory.bzl", "directory")""",
         "",
     ] + [
         _PORT_BAZEL_TPL.format(port = port)
         for port in depend_info.keys()
     ]))
-    rctx.file("%s/vcpkg/buildtrees/BUILD.bazel" % output, "\n".join([
+    rctx.file("%s/vcpkg/buildtrees/BUILD.bazel" % bootstrap_ctx.output, "\n".join([
         _BUILDTREE_BAZEL_TPL.format(package = package)
         for package in depend_info.keys()
     ]))
 
-def _bootstrap(
-        rctx,
-        output,
-        tmpdir,
-        external_bins,
-        packages,
-        packages_install_fixups,
-        packages_buildtree_fixups,
-        packages_ports_patches,
-        packages_src_patches,
-        verbose):
-    pu = platform_utils(rctx)
+def _bootstrap(rctx, bootstrap_ctx):
+    _download_vcpkg_tool(rctx, bootstrap_ctx)
 
-    _download_vcpkg_tool(rctx, output, pu)
+    _initialize(rctx, bootstrap_ctx)
 
-    _initialize(rctx, output, packages, packages_ports_patches, pu)
+    _perform_install_fixups(rctx, bootstrap_ctx)
 
-    _perform_install_fixups(rctx, output, tmpdir, packages_install_fixups, pu)
-
-    depend_info, err = collect_depend_info(rctx, output, tmpdir, external_bins, packages)
+    depend_info, err = collect_depend_info(rctx, bootstrap_ctx)
     if err:
         return err
 
-    downloads_per_package, err = download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose)
+    downloads_per_package, err = download_deps(rctx, bootstrap_ctx, depend_info)
     if err:
         return err
 
-    err = _perform_buildtree_fixups(rctx, output, packages_buildtree_fixups, packages_src_patches)
+    err = _perform_buildtree_fixups(rctx, bootstrap_ctx)
     if err:
         return err
 
-    _write_templates(
-        rctx,
-        output,
-        depend_info,
-        downloads_per_package,
-        pu,
-    )
+    _write_templates(rctx, bootstrap_ctx, depend_info, downloads_per_package)
 
     rctx.file(
         "depend_info.json",
@@ -358,16 +329,19 @@ def _bootrstrap_impl(rctx):
     tmpdir = tmpdir_res.stdout.strip()
 
     err = _bootstrap(
-        rctx,
-        output = ".",
-        tmpdir = tmpdir,
-        external_bins = external_bins,
-        packages = rctx.attr.packages,
-        packages_install_fixups = rctx.attr.packages_install_fixups,
-        packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
-        packages_ports_patches = rctx.attr.packages_ports_patches,
-        packages_src_patches = rctx.attr.packages_src_patches,
-        verbose = rctx.attr.verbose,
+        rctx = rctx,
+        bootstrap_ctx = struct(
+            pu = platform_utils(rctx),
+            output = ".",
+            tmpdir = tmpdir,
+            external_bins = external_bins,
+            packages = rctx.attr.packages,
+            packages_install_fixups = rctx.attr.packages_install_fixups,
+            packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
+            packages_ports_patches = rctx.attr.packages_ports_patches,
+            packages_src_patches = rctx.attr.packages_src_patches,
+            verbose = rctx.attr.verbose,
+        ),
     )
 
     rctx.delete(tmpdir)

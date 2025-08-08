@@ -19,23 +19,23 @@ def exec_check(
         "stderr: %s" % res.stderr,
     ])
 
-def vcpkg_exec(rctx, cmd, args, workdir, tmpdir, external_bins):
-    full_path = str(rctx.path(workdir))
+def vcpkg_exec(rctx, cmd, args, bootstrap_ctx):
+    full_path = str(rctx.path(bootstrap_ctx.output))
 
     vcpkg_env = {
         # "X_VCPKG_REGISTRIES_CACHE": "%s/registries" % workdir,
-        "PATH": external_bins,
+        "PATH": bootstrap_ctx.external_bins,
         "VCPKG_DEFAULT_BINARY_CACHE": "%s/cache" % full_path,
         "VCPKG_ROOT": "%s/vcpkg" % full_path,
-        "VCPKG_DOWNLOADS": "%s/downloads" % tmpdir,
+        "VCPKG_DOWNLOADS": "%s/downloads" % bootstrap_ctx.tmpdir,
         "VCPKG_OVERLAY_TRIPLETS": "%s/overlay_triplets" % full_path,
     }
 
     vcpkg_args = [
         "--x-buildtrees-root=vcpkg/buildtrees",
-        "--x-install-root=%s/install" % tmpdir,
+        "--x-install-root=%s/install" % bootstrap_ctx.tmpdir,
         "--x-packages-root=packages",
-        "--downloads-root=%s/downloads" % tmpdir,
+        "--downloads-root=%s/downloads" % bootstrap_ctx.tmpdir,
         "--overlay-triplets=overlay_triplets",
         "--vcpkg-root=vcpkg",
     ]

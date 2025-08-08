@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "cmake_parser")
+load("//vcpkg/bootstrap/utils:cmake_parse_downloader.bzl", "cmake_parse_downloader")
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check", "vcpkg_exec")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:logging.bzl", "L")
@@ -39,7 +39,7 @@ directory(
 """
 
 def _try_download_something(rctx, output, depend_info):
-    errors_top = []
+    errors = []
     for port in depend_info.keys():
         rctx.file(
             "%s/assets/%s/get_asset.sh" % (output, port),
@@ -58,22 +58,22 @@ def _try_download_something(rctx, output, depend_info):
 
         vcpkg_json = rctx.path("%s/vcpkg/ports/%s/vcpkg.json" % (output, port))
         if not vcpkg_json.exists:
-            errors_top.append("%s: can't find vcpkg.json for %s" % port)
+            errors.append("%s: can't find vcpkg.json for %s" % port)
             continue
 
         info = json.decode(rctx.read(vcpkg_json))
         if not info:
-            errors_top.append("%s: can't decode vcpkg.json" % port)
+            errors.append("%s: can't decode vcpkg.json" % port)
             continue
 
         if not "version" in info:
-            errors_top.append("%s: can't find 'version' in vcpkg.json" % port)
+            errors.append("%s: can't find 'version' in vcpkg.json" % port)
             continue
 
-        def vcpkg_download_distfile(urls, sha512):
+        def _download_clbk(url, sha512, on_err):
             asset_location = "collect_assets/%s" % sha512
             rctx.download(
-                url = urls,
+                url = url,
                 output = asset_location,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
             )
@@ -92,31 +92,19 @@ def _try_download_something(rctx, output, depend_info):
                 ],
                 workdir = output,
             )
+            on_err(err)
 
-            if err:
-                return [err]
-            else:
-                return []
-
-        errors = cmake_parser(
+        errors += cmake_parse_downloader(
+            rctx,
             rctx.read(portfile),
             "%s portfile.cmake" % port,
-            [
-                struct(
-                    name = "vcpkg_download_distfile",
-                    args = ["URLS", "SHA512"],
-                    call = vcpkg_download_distfile,
-                ),
-            ],
+            download_clbk = _download_clbk,
             substitutions = {
                 "VERSION": info["version"],
             },
         )
 
-        if errors:
-            errors_top += errors
-
-    return errors_top
+    return errors
 
 _DOWNLOAD_TRY_PREFIX = "Trying to download "
 _DOWNLOAD_TRY_POSTFIX = " using asset cache script"
@@ -160,7 +148,7 @@ def _extract_downloads(rctx, result, output, attempt):
 
     return None
 
-def _run_install_loop(rctx, output, tmpdir, external_bins):
+def _run_install_loop(rctx, bootstrap_ctx):
     def cleanup():
         rctx.delete("collect_assets.csv")
         rctx.delete("collect_assets.sh")
@@ -169,7 +157,7 @@ def _run_install_loop(rctx, output, tmpdir, external_bins):
         cleanup()
         return None, err
 
-    full_path = str(rctx.path(output))
+    full_path = str(rctx.path(bootstrap_ctx.output))
 
     rctx.file("collect_assets.sh", _COLLECT_ASSETS_SH, executable = True)
 
@@ -193,12 +181,12 @@ def _run_install_loop(rctx, output, tmpdir, external_bins):
         rctx.file("collect_assets.csv", "", executable = False)
 
         # Call `install --only-downloads` jsut to collect csv with urls and sha512
-        _, err = vcpkg_exec(rctx, "install", install_args, output, tmpdir, external_bins)
+        _, err = vcpkg_exec(rctx, "install", install_args, bootstrap_ctx)
         if err:
             return on_error(err)
 
         if attempt:
-            err = _extract_downloads(rctx, downloads, output, attempt)
+            err = _extract_downloads(rctx, downloads, bootstrap_ctx.output, attempt)
             if err:
                 return on_error(err)
 
@@ -245,7 +233,7 @@ else
 fi
 """
 
-def download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose):
+def download_deps(rctx, bootstrap_ctx, depend_info):
     def cleanup():
         rctx.delete("collect_assets")
 
@@ -253,21 +241,21 @@ def download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose):
         cleanup()
         return None, err
 
-    for dir in ["%s/downloads" % tmpdir, "collect_assets"]:
+    for dir in ["%s/downloads" % bootstrap_ctx.tmpdir, "collect_assets"]:
         _, err = exec_check(
             rctx,
             "Creating %s" % dir,
             ["mkdir", dir],
-            workdir = output,
+            workdir = bootstrap_ctx.output,
         )
         if err:
             return on_error(err)
 
-    errors = _try_download_something(rctx, output, depend_info)
-    if verbose:
+    errors = _try_download_something(rctx, bootstrap_ctx.output, depend_info)
+    if bootstrap_ctx.verbose:
         print(L.warn(*errors))
 
-    downloads, err = _run_install_loop(rctx, output, tmpdir, external_bins)
+    downloads, err = _run_install_loop(rctx, bootstrap_ctx)
     if err:
         return on_error(err)
 
@@ -276,10 +264,10 @@ def download_deps(rctx, output, tmpdir, depend_info, external_bins, verbose):
         "Moving downloads",
         [
             "mv",
-            "%s/downloads" % tmpdir,
+            "%s/downloads" % bootstrap_ctx.tmpdir,
             "downloads",
         ],
-        workdir = output,
+        workdir = bootstrap_ctx.output,
     )
 
     if err:

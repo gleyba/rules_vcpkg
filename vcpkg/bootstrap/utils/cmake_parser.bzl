@@ -1,7 +1,7 @@
 def _is_whitespace(ch):
     return ch in [" ", "\n", "\r"]
 
-def _parse_tokens(body):
+def _parse_tokens(body, _parse_ctx):
     body_len = len(body)
     tokens = []
 
@@ -29,7 +29,7 @@ def _parse_tokens(body):
     if start_token_pos:
         add_token(body[start_token_pos:body_len])
 
-    return tokens, None
+    return tokens
 
 def _to_dict(**kwargs):
     return kwargs
@@ -57,9 +57,6 @@ def _new_state(const_data = {}, mutable_data = {}):
         mutable = mutable_data,
         **methods
     )
-
-_STRING_TYPE = type("foo")
-_TUPLE_TYPE = type((42, "bar"))
 
 def _match_state(name):
     state = _new_state(
@@ -99,10 +96,55 @@ def _match_state(name):
         process_next_char = lambda ch: process_next_char(state, ch),
     )
 
-def _create_func_tracking(func_def, mnemo):
-    match_state = _match_state(func_def.name)
+def _parse_func_kwargs(tokens, match_args, parse_ctx):
+    kwargs = {}
 
-    def process_next_char(match_state, ch):
+    found_arg = None
+    for token in tokens:
+        if found_arg:
+            kwargs[found_arg.lower()] = parse_ctx.substitute(token)
+            found_arg = None
+            continue
+
+        if token in match_args:
+            found_arg = token
+            continue
+
+    for match_arg in match_args:
+        if kwargs.setdefault(match_arg.lower()) != None:
+            continue
+
+        parse_ctx.on_err("Can't parse arg: '%s' in tokens: '%s'" % (match_arg, tokens))
+
+    return kwargs
+
+def _match_and_call(tokens, func_defs, parse_ctx):
+    for func_def in func_defs:
+        if hasattr(func_def, "match_tokens"):
+            matched = True
+            for idx, match_token in enumerate(func_def.match_tokens):
+                if tokens[idx] == match_token:
+                    continue
+
+                matched = False
+                break
+
+            if not matched:
+                continue
+
+        args = [parse_ctx]
+        kwargs = {}
+        if hasattr(func_def, "match_args"):
+            kwargs = _parse_func_kwargs(tokens, func_def.match_args, parse_ctx)
+        else:
+            args += tokens
+
+        func_def.call(*args, **kwargs)
+
+def _create_func_tracking(func_name, func_defs, parse_ctx):
+    match_state = _match_state(func_name)
+
+    def _process_next_char(match_state, ch):
         if match_state.is_matched():
             if ch == "(":
                 return True
@@ -113,36 +155,24 @@ def _create_func_tracking(func_def, mnemo):
 
         return False
 
-    def call(body):
-        top_errors = []
-        tokens, err = _parse_tokens(body)
-        if err:
-            top_errors.append(err)
-
+    def _call(body):
+        tokens = _parse_tokens(body, parse_ctx)
         if tokens == None:
-            return errors
+            return
 
-        errors = func_def.call(*tokens)
-        if errors:
-            top_errors += errors
-
-        return top_errors
+        _match_and_call(tokens, func_defs, parse_ctx)
 
     return struct(
-        name = func_def.name,
-        call = call,
-        process_next_char = lambda ch: process_next_char(match_state, ch),
+        name = func_name,
+        call = _call,
+        process_next_char = lambda ch: _process_next_char(match_state, ch),
         clean_state = lambda: match_state.clean_state(),
-    ), None
+    )
 
-def _create_func_trackings(funcs_defs, mnemo):
+def _create_func_trackings(funcs_defs, parse_ctx):
     funcs_trackings = []
-    errors = []
-
-    for func in funcs_defs:
-        func_tracking, err = _create_func_tracking(func, mnemo)
-        if err:
-            errors.append(err)
+    for func_name, defs in funcs_defs.items():
+        func_tracking = _create_func_tracking(func_name, defs, parse_ctx)
         if func_tracking:
             funcs_trackings.append(func_tracking)
 
@@ -150,12 +180,12 @@ def _create_func_trackings(funcs_defs, mnemo):
         funcs_trackings,
         key = lambda x: len(x.name),
         reverse = True,
-    ), errors
+    )
 
-def _create_tracking(funcs_defs, mnemo):
-    funcs_trackings, errors = _create_func_trackings(funcs_defs, mnemo)
+def _create_tracking(funcs_defs, parse_ctx):
+    funcs_trackings = _create_func_trackings(funcs_defs, parse_ctx)
     if not funcs_trackings:
-        return None, errors
+        return None
 
     def _clean_state(funcs_trackings):
         for func_tracking in funcs_trackings:
@@ -173,19 +203,14 @@ def _create_tracking(funcs_defs, mnemo):
 
     return struct(
         process_next_char = lambda ch: process_next_char(funcs_trackings, ch),
-    ), errors
+    )
 
-def _parse_calls(data, mnemo, funcs_defs):
+def _parse_calls(data, parse_ctx, funcs_defs):
     data_len = len(data)
 
-    tracking, errors = _create_tracking(funcs_defs, mnemo)
-
+    tracking = _create_tracking(funcs_defs, parse_ctx)
     if not tracking:
-        return errors
-
-    top_errors = []
-    if errors:
-        top_errors += errors
+        return
 
     started = None
     for idx in range(data_len):
@@ -194,10 +219,7 @@ def _parse_calls(data, mnemo, funcs_defs):
             if ch != ")":
                 continue
 
-            errors = started.func.call(data[started.pos:idx])
-            if errors:
-                top_errors += errors
-
+            started.func.call(data[started.pos:idx])
             started = None
         else:
             func_to_start = tracking.process_next_char(data[idx])
@@ -210,125 +232,82 @@ def _parse_calls(data, mnemo, funcs_defs):
             )
 
     if started:
-        top_errors.append("Parsing %s: can't finish parsing func - %s" % (mnemo, mnemo))
+        parse_ctx.on_err("Can't finish parsing func - %s" % started.func.name)
 
-    return top_errors
-
-def _parse_func_args(tokens, mnemo, *args):
-    results = {}
+def _parse_ctx(mnemo, substitutions = {}):
     errors = []
 
-    found_arg = None
-    for token in tokens:
-        if found_arg:
-            results[found_arg] = token
-            found_arg = None
-            continue
+    def _on_err(err):
+        if not err:
+            return False
 
-        if token in args:
-            found_arg = token
-            continue
+        errors.append("Parsing %s: %s" % (mnemo, err))
+        return True
 
-    if len(results) < len(args):
-        errors.append("Parsing %s: can't parse all args: '%s' in tokens: '%s'" % (
-            mnemo,
-            args,
-            tokens,
-        ))
+    def _substitute_var(result):
+        for key, value in substitutions.items():
+            result = result.replace("${%s}" % key, value)
 
-    return results, errors
+        if "${" in result:
+            _on_err("Not all substitutions unwrapped: %s" % result)
 
-def _substitute_var(result, substitutions):
-    for key, value in substitutions.items():
-        result = result.replace("${%s}" % key, value)
+        return result
 
-    err = None
-    if "${" in result:
-        err = "Not all substitutions unwrapped: %s" % result
+    def _set(key, value):
+        substitutions[key] = value
 
-    return result, err
+    def _set_substitute(key, value, map = None):
+        value = _substitute_var(value)
+        if value == None:
+            return
 
-def _wannabe_cmake_parser(data, mnemo, funcs, substitutions = {}):
-    def _set(*tokens):
+        if map == None:
+            _set(key, value)
+        else:
+            _set(key, map(value))
+
+    return struct(
+        mnemo = mnemo,
+        errors = errors,
+        substitutions = substitutions,
+        substitute = _substitute_var,
+        set = _set,
+        set_subst = _set_substitute,
+        on_err = _on_err,
+    )
+
+def _wannabe_cmake_parser(data, mnemo, funcs_defs, substitutions = {}):
+    parse_ctx = _parse_ctx(mnemo, substitutions)
+
+    def _set(parse_ctx, *tokens):
         if len(tokens) != 2:
-            return ["Set doesn't have 2 arguments: %s" % str(tokens)]
+            parse_ctx.on_err("Set doesn't have 2 arguments: %s" % str(tokens))
+            return
 
-        value, err = _substitute_var(tokens[1], substitutions)
-        if value != None:
-            substitutions[tokens[0]] = value
+        parse_ctx.set_subst(tokens[0], tokens[1])
 
-        if err != None:
-            return [err]
+    funcs_defs.setdefault("set", [])
+    funcs_defs["set"].append(struct(call = _set))
 
-        return []
-
-    def _replace(*tokens):
+    def _replace(parse_ctx, *tokens):
         tokens_len = len(tokens)
         if tokens_len != 5:
-            return ["len(tokens) == %s, but expected 5 for string(REPLACE, ..." % tokens_len]
+            parse_ctx.on_err("len(tokens) == %s, but expected 5 for string(REPLACE, ..." % tokens_len)
+            return
 
         if tokens[0] != "REPLACE":
-            return ["Can only process string(REPLACE, ..."]
+            parse_ctx.on_err(["Can only process string(REPLACE, ..."])
+            return
 
-        errors = []
-        value, err = _substitute_var(tokens[4], substitutions)
-        if err != None:
-            errors.append(err)
-        if not value:
-            return errors
+        parse_ctx.set_subst(tokens[3], tokens[4], lambda v: v.replace(tokens[1], tokens[2]))
 
-        substitutions[tokens[3]] = value.replace(tokens[1], tokens[2])
+    funcs_defs.setdefault("string", [])
+    funcs_defs["string"].append(struct(
+        match_tokens = ["REPLACE"],
+        call = _replace,
+    ))
 
-        return errors
-
-    funcs_defs = [
-        struct(
-            name = "set",
-            call = _set,
-        ),
-        struct(
-            name = "string",
-            call = _replace,
-        ),
-    ]
-
-    def _call_func(func):
-        def _inner_call(func, tokens):
-            top_errors = []
-            args, errors = _parse_func_args(
-                tokens,
-                "%s (function - %s)" % (mnemo, func.name),
-                *func.args
-            )
-            if errors:
-                top_errors += errors
-
-            if args == None:
-                return top_errors
-
-            substitute_args = {}
-            for key, value in args.items():
-                value, err = _substitute_var(value, substitutions)
-                if err != None:
-                    top_errors.append(err)
-
-                if value != None:
-                    substitute_args[key.lower()] = value
-
-            errors = func.call(**substitute_args)
-            if errors:
-                top_errors += errors
-
-            return top_errors
-
-        return lambda *tokens: _inner_call(func, tokens)
-
-    for func in funcs:
-        funcs_defs.append(struct(
-            name = func.name,
-            call = _call_func(func),
-        ))
-
-    return _parse_calls(data, mnemo, funcs_defs)
+    _parse_calls(data, parse_ctx, funcs_defs)
+    return parse_ctx.errors
 
 cmake_parser = _wannabe_cmake_parser

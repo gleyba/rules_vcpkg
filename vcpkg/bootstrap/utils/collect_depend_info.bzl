@@ -1,7 +1,7 @@
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "vcpkg_exec")
 
-def collect_depend_info(rctx, workdir, tmpdir, external_bins, packages):
-    res, err = vcpkg_exec(rctx, "depend-info", packages, workdir, tmpdir, external_bins)
+def collect_depend_info(rctx, bootstrap_ctx):
+    res, err = vcpkg_exec(rctx, "depend-info", bootstrap_ctx.packages, bootstrap_ctx)
     if err:
         return None, err
 
