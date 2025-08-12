@@ -38,25 +38,28 @@ directory(
 )
 """
 
-def _try_download_something(rctx, output, depend_info):
+# This thing allows parallel downloads, also pull some distfiles, not covered
+# by `_run_install_loop`, which unblocks setups with `--nosandbox_default_allow_network`.
+# So, it worth its own wannabe cmake parser to exist.
+def _try_download_something(rctx, bootstrap_ctx, depend_info):
     errors = []
     for port in depend_info.keys():
         rctx.file(
-            "%s/assets/%s/get_asset.sh" % (output, port),
+            "%s/assets/%s/get_asset.sh" % (bootstrap_ctx.output, port),
             _GET_PORT_ASSETS_SH,
             executable = True,
         )
         rctx.file(
-            "%s/assets/%s/BUILD.bazel" % (output, port),
+            "%s/assets/%s/BUILD.bazel" % (bootstrap_ctx.output, port),
             _PORT_ASSETS_BUILD_TPL.format(port = port),
             executable = False,
         )
 
-        portfile = rctx.path("%s/vcpkg/ports/%s/portfile.cmake" % (output, port))
+        portfile = rctx.path("%s/vcpkg/ports/%s/portfile.cmake" % (bootstrap_ctx.output, port))
         if not portfile.exists:
             return None, "Can't find portfile.cmake for %s" % port
 
-        vcpkg_json = rctx.path("%s/vcpkg/ports/%s/vcpkg.json" % (output, port))
+        vcpkg_json = rctx.path("%s/vcpkg/ports/%s/vcpkg.json" % (bootstrap_ctx.output, port))
         if not vcpkg_json.exists:
             errors.append("%s: can't find vcpkg.json for %s" % port)
             continue
@@ -76,6 +79,7 @@ def _try_download_something(rctx, output, depend_info):
                 url = url,
                 output = asset_location,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
+                block = False,
             )
 
             _, err = exec_check(
@@ -85,17 +89,18 @@ def _try_download_something(rctx, output, depend_info):
                     "ln",
                     asset_location,
                     "%s/assets/%s/%s" % (
-                        output,
+                        bootstrap_ctx.output,
                         port,
                         sha512,
                     ),
                 ],
-                workdir = output,
+                workdir = bootstrap_ctx.output,
             )
             on_err(err)
 
         errors += cmake_parse_downloader(
             rctx,
+            bootstrap_ctx,
             rctx.read(portfile),
             "%s portfile.cmake" % port,
             download_clbk = _download_clbk,
@@ -251,7 +256,7 @@ def download_deps(rctx, bootstrap_ctx, depend_info):
         if err:
             return on_error(err)
 
-    errors = _try_download_something(rctx, bootstrap_ctx.output, depend_info)
+    errors = _try_download_something(rctx, bootstrap_ctx, depend_info)
     if bootstrap_ctx.verbose:
         print(L.warn(*errors))
 

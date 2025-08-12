@@ -73,9 +73,85 @@ def _icu_test_impl(ctx):
 
 icu_test = unittest.make(_icu_test_impl)
 
+def _libiconv_test_impl(ctx):
+    env = unittest.begin(ctx)
+
+    def check_vcpkg_download_distfile(_parse_ctx, urls, sha512):
+        asserts.equals(
+            env,
+            [
+                "https://ftp.gnu.org/gnu/libiconv/libiconv-1.2.3.tar.gz",
+                "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/libiconv/libiconv-1.2.3.tar.gz",
+            ],
+            urls,
+        )
+        asserts.equals(env, "a55eb3b7b785a78ab8918db8af541c9e11deb5ff4f89d54483287711ed797d87848ce0eafffa7ce26d9a7adb4b5a9891cb484f94bd4f51d3ce97a6a47b4c719a", sha512)
+
+    errors = cmake_parser(
+        """\
+    vcpkg_download_distfile(ARCHIVE
+        URLS "https://ftp.gnu.org/gnu/libiconv/libiconv-${VERSION}.tar.gz"
+            "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/libiconv/libiconv-${VERSION}.tar.gz"
+        FILENAME "libiconv-${VERSION}.tar.gz"
+        SHA512 a55eb3b7b785a78ab8918db8af541c9e11deb5ff4f89d54483287711ed797d87848ce0eafffa7ce26d9a7adb4b5a9891cb484f94bd4f51d3ce97a6a47b4c719a
+    )
+""",
+        "libiconv_test",
+        {
+            "vcpkg_download_distfile": [
+                struct(
+                    match_args = ["URLS", "SHA512"],
+                    call = check_vcpkg_download_distfile,
+                ),
+            ],
+        },
+        {"VERSION": "1.2.3"},
+    )
+
+    asserts.equals(env, [], errors)
+
+    return unittest.end(env)
+
+libiconv_test = unittest.make(_libiconv_test_impl)
+
+def _double_conversion_test_impl(ctx):
+    env = unittest.begin(ctx)
+
+    def check_vcpkg_download_distfile(_parse_ctx, urls, sha512):
+        asserts.equals(env, "https://github.com/google/double-conversion/commit/101e1ba89dc41ceb75090831da97c43a76cd2906.patch?full_index=1", urls)
+        asserts.equals(env, "a946a1909b10f3ac5262cbe5cd358a74cf018325223403749aaeb81570ef3e2f833ee806afdefcd388e56374629de8ccca0a1cef787afa481c79f9e8f8dcaa13", sha512)
+
+    errors = cmake_parser(
+        """\
+        vcpkg_download_distfile(PATCH_501_FIX_CMAKE_3_5
+        URLS https://github.com/google/double-conversion/commit/101e1ba89dc41ceb75090831da97c43a76cd2906.patch?full_index=1
+        SHA512 a946a1909b10f3ac5262cbe5cd358a74cf018325223403749aaeb81570ef3e2f833ee806afdefcd388e56374629de8ccca0a1cef787afa481c79f9e8f8dcaa13
+        FILENAME google-double-conversion-101e1ba89dc41ceb75090831da97c43a76cd2906.patch
+    )
+""",
+        "double_conversion_test",
+        {
+            "vcpkg_download_distfile": [
+                struct(
+                    match_args = ["URLS", "SHA512"],
+                    call = check_vcpkg_download_distfile,
+                ),
+            ],
+        },
+        {"VERSION": "1.2.3"},
+    )
+
+    asserts.equals(env, [], errors)
+
+    return unittest.end(env)
+
+double_conversion_test = unittest.make(_double_conversion_test_impl)
+
 def cmake_parser_test_suite():
     unittest.suite(
         "cmake_parser_test",
         partial.make(lbpng_test, timeout = "short"),
         partial.make(icu_test, timeout = "short"),
+        partial.make(libiconv_test, timeout = "short"),
+        partial.make(double_conversion_test, timeout = "short"),
     )

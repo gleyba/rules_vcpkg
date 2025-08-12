@@ -69,9 +69,6 @@ def _match_state(name):
         ),
     )
 
-    def clean_state(state):
-        state.set_match_pos(None)
-
     def process_next_char(state, ch):
         pos = state.match_pos()
         if pos == None:
@@ -85,9 +82,6 @@ def _match_state(name):
 
         state.set_match_pos(pos)
 
-    def is_matched(state):
-        return state.match_pos() == state.name_len() - 1
-
     return struct(
         state = state,
         clean_state = lambda: state.set_match_pos(None),
@@ -99,22 +93,50 @@ def _match_state(name):
 def _parse_func_kwargs(tokens, match_args, parse_ctx):
     kwargs = {}
 
-    found_arg = None
+    def _process_cur_values(state):
+        if state.found_arg() == None:
+            return
+
+        if not state.values():
+            return
+
+        elif len(state.values()) == 1:
+            kwargs[state.found_arg()] = state.values()[0]
+        else:
+            kwargs[state.found_arg()] = state.values()
+
+        state.set_found_arg(None)
+        state.set_values([])
+
+    state = _new_state(mutable_data = _to_dict(
+        found_arg = None,
+        values = [],
+    ))
+
     for token in tokens:
-        if found_arg:
-            kwargs[found_arg.lower()] = parse_ctx.substitute(token)
-            found_arg = None
-            continue
+        if state.found_arg() != None:
+            if token.isupper():
+                _process_cur_values(state)
+            else:
+                value = parse_ctx.substitute(token)
+                if value != None:
+                    state.values().append(value)
+                continue
 
         if token in match_args:
-            found_arg = token
-            continue
+            state.set_found_arg(token.lower())
+            state.set_values([])
+
+    _process_cur_values(state)
 
     for match_arg in match_args:
         if kwargs.setdefault(match_arg.lower()) != None:
             continue
 
-        parse_ctx.on_err("Can't parse arg: '%s' in tokens: '%s'" % (match_arg, tokens))
+        parse_ctx.on_err("Can't parse arg: '%s' in tokens: '%s'" % (
+            match_arg,
+            tokens,
+        ))
 
     return kwargs
 
@@ -216,11 +238,15 @@ def _parse_calls(data, parse_ctx, funcs_defs):
     for idx in range(data_len):
         if started:
             ch = data[idx]
-            if ch != ")":
-                continue
+            if ch == started.chars_to_call[-1]:
+                started.chars_to_call.pop()
+                if started.chars_to_call:
+                    continue
 
-            started.func.call(data[started.pos:idx])
-            started = None
+                started.func.call(data[started.pos:idx])
+                started = None
+            elif ch == "\"":
+                started.chars_to_call.append("\"")
         else:
             func_to_start = tracking.process_next_char(data[idx])
             if func_to_start == None:
@@ -229,6 +255,7 @@ def _parse_calls(data, parse_ctx, funcs_defs):
             started = struct(
                 func = func_to_start,
                 pos = idx + 1,
+                chars_to_call = [")"],
             )
 
     if started:
@@ -250,6 +277,7 @@ def _parse_ctx(mnemo, substitutions = {}):
 
         if "${" in result:
             _on_err("Not all substitutions unwrapped: %s" % result)
+            return None
 
         return result
 
@@ -292,11 +320,11 @@ def _wannabe_cmake_parser(data, mnemo, funcs_defs, substitutions = {}):
     def _replace(parse_ctx, *tokens):
         tokens_len = len(tokens)
         if tokens_len != 5:
-            parse_ctx.on_err("len(tokens) == %s, but expected 5 for string(REPLACE, ..." % tokens_len)
+            parse_ctx.on_err("len(tokens) == %s, but expected 5 for string(REPLACE ..." % tokens_len)
             return
 
         if tokens[0] != "REPLACE":
-            parse_ctx.on_err(["Can only process string(REPLACE, ..."])
+            parse_ctx.on_err(["Can only process string(REPLACE ..."])
             return
 
         parse_ctx.set_subst(tokens[3], tokens[4], lambda v: v.replace(tokens[1], tokens[2]))
