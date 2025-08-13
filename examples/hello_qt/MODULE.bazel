@@ -16,35 +16,35 @@ vcpkg.bootstrap(
     # verbose = True,
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "openssl",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "libiconv",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "protobuf",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "grpc",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "ffmpeg",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtgrpc",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qt3d",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     # This fixup is only mandatory if network usage prohibited in sandbox
     # with `--nosandbox_default_allow_network`
     install_fixups = [
@@ -54,31 +54,31 @@ vcpkg.configure(
     package = "qtbase",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtdeclarative",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtapplicationmanager",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qttools",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtdatavis3d",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtmultimedia",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qttopcua",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtquick3d",
 )
 vcpkg.configure(
@@ -90,12 +90,8 @@ vcpkg.configure(
     ],
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "qtcharts",
-)
-vcpkg.configure(
-    cpus = "HOST_CPUS",
-    package = "openssl",
 )
 vcpkg.install(package = "qt")
 vcpkg.configure_prefixed(
