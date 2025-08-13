@@ -9,6 +9,8 @@ load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 def _download_vcpkg_tool(rctx, bootstrap_ctx):
+    rctx.report_progress("Downloading VCPKG tool")
+
     tool_meta = {
         line.split("=")[0]: line.split("=")[1]
         for line in rctx.read("%s/vcpkg/scripts/vcpkg-tool-metadata.txt" % bootstrap_ctx.output).split("\n")
@@ -33,6 +35,7 @@ exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
 def _initialize(rctx, bootstrap_ctx):
+    rctx.report_progress("Initializing VCPKG and pactching ports")
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
@@ -73,6 +76,8 @@ def _initialize(rctx, bootstrap_ctx):
         rctx.watch(patch_file)
 
 def _perform_install_fixups(rctx, bootstrap_ctx):
+    rctx.report_progress("Initializing VCPKG and pactching ports")
+
     for package, sh_lines in bootstrap_ctx.packages_install_fixups.items():
         rctx.file(
             "%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package),
@@ -94,6 +99,8 @@ def _perform_install_fixups(rctx, bootstrap_ctx):
         )
 
 def _perform_buildtree_fixups(rctx, bootstrap_ctx):
+    rctx.report_progress("Performing VCPKG buildtrees fixups")
+
     for package, sh_lines in bootstrap_ctx.packages_buildtree_fixups.items():
         rctx.file(
             "%s/buildtree_fixups/%s.sh" % (bootstrap_ctx.output, package),
@@ -157,7 +164,6 @@ vcpkg_toolchain(
         "//vcpkg/scripts",
         "//vcpkg/triplets",
     ],
-    host_cpu_count = {host_cpu_count},
 )
 
 toolchain(
@@ -236,10 +242,11 @@ filegroup(
 """
 
 def _write_templates(rctx, bootstrap_ctx, depend_info, downloads_per_package):
+    rctx.report_progress("Writing VCPKG templates")
+
     rctx.file("%s/BUILD.bazel" % bootstrap_ctx.output, _BUILD_BAZEL_TPL.format(
         os = bootstrap_ctx.pu.targets.os,
         arch = bootstrap_ctx.pu.targets.arch,
-        host_cpu_count = bootstrap_ctx.pu.host_cpus_count(),
     ))
 
     rctx.file("%s/vcpkg/BUILD.bazel" % bootstrap_ctx.output, _VCPKG_BAZEL)

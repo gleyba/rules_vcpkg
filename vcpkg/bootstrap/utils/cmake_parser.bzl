@@ -143,6 +143,9 @@ def _parse_func_kwargs(tokens, match_args, parse_ctx):
 def _match_and_call(tokens, func_defs, parse_ctx):
     for func_def in func_defs:
         if hasattr(func_def, "match_tokens"):
+            if len(tokens) < len(func_def.match_tokens):
+                continue
+
             matched = True
             for idx, match_token in enumerate(func_def.match_tokens):
                 if tokens[idx] == match_token:

@@ -147,6 +147,48 @@ def _double_conversion_test_impl(ctx):
 
 double_conversion_test = unittest.make(_double_conversion_test_impl)
 
+def _automake_test_impl(ctx):
+    env = unittest.begin(ctx)
+
+    def check_vcpkg_download_distfile(_parse_ctx, urls, sha512):
+        asserts.equals(
+            env,
+            [
+                "https://ftp.gnu.org/gnu/automake/automake-1.17.tar.gz",
+                "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/automake/automake-1.17.tar.gz",
+            ],
+            urls,
+        )
+        asserts.equals(env, "11357dfab8cbf4b5d94d9d06e475732ca01df82bef1284888a34bd558afc37b1a239bed1b5eb18a9dbcc326344fb7b1b301f77bb8385131eb8e1e118b677883a", sha512)
+
+    errors = cmake_parser(
+        """\
+    set(automake_version 1.17)
+    vcpkg_download_distfile(ARCHIVE
+        URLS https://ftp.gnu.org/gnu/automake/automake-${automake_version}.tar.gz
+            https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/automake/automake-${automake_version}.tar.gz
+        FILENAME automake-${automake_version}.tar.gz
+        SHA512 11357dfab8cbf4b5d94d9d06e475732ca01df82bef1284888a34bd558afc37b1a239bed1b5eb18a9dbcc326344fb7b1b301f77bb8385131eb8e1e118b677883a
+    )
+""",
+        "automake_test",
+        {
+            "vcpkg_download_distfile": [
+                struct(
+                    match_args = ["URLS", "SHA512"],
+                    call = check_vcpkg_download_distfile,
+                ),
+            ],
+        },
+        {"VERSION": "1.17"},
+    )
+
+    asserts.equals(env, [], errors)
+
+    return unittest.end(env)
+
+automake_test = unittest.make(_automake_test_impl)
+
 def cmake_parser_test_suite():
     unittest.suite(
         "cmake_parser_test",
@@ -154,4 +196,5 @@ def cmake_parser_test_suite():
         partial.make(icu_test, timeout = "short"),
         partial.make(libiconv_test, timeout = "short"),
         partial.make(double_conversion_test, timeout = "short"),
+        partial.make(automake_test, timeout = "short"),
     )

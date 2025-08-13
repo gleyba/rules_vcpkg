@@ -38,11 +38,15 @@ directory(
 )
 """
 
-# This thing allows parallel downloads, also pull some distfiles, not covered
+_LIST_TYPE = type([])
+
+# This thing allows better parallelization in downloads, also pull some distfiles, not covered
 # by `_run_install_loop`, which unblocks setups with `--nosandbox_default_allow_network`.
 # So, it worth its own wannabe cmake parser to exist.
 def _try_download_something(rctx, bootstrap_ctx, depend_info):
     errors = []
+    deferred_downloads = []
+
     for port in depend_info.keys():
         rctx.file(
             "%s/assets/%s/get_asset.sh" % (bootstrap_ctx.output, port),
@@ -69,34 +73,38 @@ def _try_download_something(rctx, bootstrap_ctx, depend_info):
             errors.append("%s: can't decode vcpkg.json" % port)
             continue
 
-        if not "version" in info:
+        substitutions = {}
+        if "version" in info:
+            substitutions["VERSION"] = info["version"]
+        elif "version-semver" in info:
+            substitutions["VERSION"] = info["version-semver"]
+        else:
             errors.append("%s: can't find 'version' in vcpkg.json" % port)
-            continue
 
-        def _download_clbk(url, sha512, on_err):
+        def _download_clbk(url, sha512, _on_err):
+            if type(url) == _LIST_TYPE:
+                # Faster mirrors usually iun the end
+                url = reversed(url)
+
+            rctx.report_progress("Starting download: %s" % url)
             asset_location = "collect_assets/%s" % sha512
-            rctx.download(
+
+            deferred = rctx.download(
                 url = url,
                 output = asset_location,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
                 block = False,
+                allow_fail = True,
             )
-
-            _, err = exec_check(
-                rctx,
-                "Moving %s to assets" % asset_location,
-                [
-                    "ln",
-                    asset_location,
-                    "%s/assets/%s/%s" % (
-                        bootstrap_ctx.output,
-                        port,
-                        sha512,
-                    ),
-                ],
-                workdir = bootstrap_ctx.output,
-            )
-            on_err(err)
+            deferred_downloads.append(struct(
+                asset_location = asset_location,
+                copy_to = "%s/assets/%s/%s" % (
+                    bootstrap_ctx.output,
+                    port,
+                    sha512,
+                ),
+                deferred = deferred,
+            ))
 
         errors += cmake_parse_downloader(
             rctx,
@@ -104,10 +112,24 @@ def _try_download_something(rctx, bootstrap_ctx, depend_info):
             rctx.read(portfile),
             "%s portfile.cmake" % port,
             download_clbk = _download_clbk,
-            substitutions = {
-                "VERSION": info["version"],
-            },
+            substitutions = substitutions,
         )
+
+    rctx.report_progress("Merging deferred downloads")
+    for dd in deferred_downloads:
+        dd.deferred.wait()
+        _, err = exec_check(
+            rctx,
+            "Moving %s to assets" % dd.asset_location,
+            [
+                "ln",
+                dd.asset_location,
+                dd.copy_to,
+            ],
+            workdir = bootstrap_ctx.output,
+        )
+        if err:
+            errors.append(err)
 
     return errors
 
@@ -123,6 +145,7 @@ def _extract_downloads(rctx, result, output, attempt):
             "but didn't collect all, probably we are in corrupted state",
         ])
 
+    rctx.report_progress("`vcpkg install --only-downloads` loop #%s, parsing buildtrees logfiles for downloads" % attempt)
     for buildtree in rctx.path("%s/vcpkg/buildtrees" % output).readdir():
         downloads = set()
         for buildtree_inner in buildtree.readdir():
@@ -183,6 +206,7 @@ def _run_install_loop(rctx, bootstrap_ctx):
 
     # Just some number of iterations as a hack, should finish early
     for attempt in range(_DOWNLOAD_LOOP_ATTEMPTS + 1):
+        rctx.report_progress("Run `vcpkg install --only-downloads` loop #%s" % attempt)
         rctx.file("collect_assets.csv", "", executable = False)
 
         # Call `install --only-downloads` jsut to collect csv with urls and sha512
@@ -205,12 +229,18 @@ def _run_install_loop(rctx, bootstrap_ctx):
             break
 
         # Actually download assets
-        for url, sha512 in to_download:
-            rctx.download(
+        pending = {
+            url: rctx.download(
                 url = url,
                 output = "collect_assets/%s" % sha512,
                 integrity = "sha512-%s" % base64_encode_hexstr(sha512),
+                block = False,
             )
+            for url, sha512 in to_download
+        }
+        for url, p in pending.items():
+            rctx.report_progress("`vcpkg install --only-downloads` loop #%s, waiting for download: %s" % (attempt, url))
+            p.wait()
 
     return downloads, None
 
@@ -239,6 +269,8 @@ fi
 """
 
 def download_deps(rctx, bootstrap_ctx, depend_info):
+    rctx.report_progress("Downloading VCPKG deps")
+
     def cleanup():
         rctx.delete("collect_assets")
 

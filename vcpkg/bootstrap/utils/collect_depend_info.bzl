@@ -1,11 +1,14 @@
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "vcpkg_exec")
 
 def collect_depend_info(rctx, bootstrap_ctx):
+    rctx.report_progress("Collecting VCPKG depend-info")
+
     res, err = vcpkg_exec(rctx, "depend-info", bootstrap_ctx.packages, bootstrap_ctx)
     if err:
         return None, err
 
     info_raw = res.stderr
+
     result = {}
     for package_info_raw in info_raw.split("\n"):
         if not package_info_raw:

@@ -1,9 +1,26 @@
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
+load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
+
+_VCPKG_BUILD_BZL_TPL = """\
+load("@rules_vcpkg//vcpkg/private:vcpkg_build.bzl", "vcpkg_build", "unwrap_cpus_count")
+
+_CPU_COUNT = unwrap_cpus_count("{cpus}", {host_cpus})
+
+_EXEC_REQS = {{
+    "cpu:%s" % _CPU_COUNT: "",
+    "resources:cpu:%s" % _CPU_COUNT: "",
+}}
+
+def _num_cpus(_os, _num_inputs):
+    return {{"cpu": int(_CPU_COUNT)}}
+
+{package_escaped}_build = vcpkg_build(_CPU_COUNT, _num_cpus, _EXEC_REQS)
+"""
 
 _VCPKG_BUILD_TPL = """\
-load("@rules_vcpkg//vcpkg:vcpkg.bzl", "vcpkg_build")
+load(":{package_escaped}_build.bzl", "{package_escaped}_build")
 
-vcpkg_build(
+{package_escaped}_build(
     name = "vcpkg_build",
     package_name = "{package}",
     port = "@{bootstrap_repo}//vcpkg/ports:{package}",
@@ -12,7 +29,6 @@ vcpkg_build(
     assets = "@{bootstrap_repo}//assets/{package}",
     package_features = {features},
     deps = {build_deps}, 
-    cpus = "{cpus}",
     visibility = ["//visibility:public"],
 )
 """
@@ -63,6 +79,9 @@ vcpkg_package(
 """
 
 def _declare_impl(rctx):
+    pu = platform_utils(rctx)
+    host_cpu_count = pu.host_cpus_count()
+
     depend_info = json.decode(rctx.read(rctx.path(rctx.attr.depend_info)))
 
     for package, info in depend_info.items():
@@ -73,14 +92,29 @@ def _declare_impl(rctx):
 
             include_postfixes += postfixes
 
+        package_escaped = package.replace("-", "_")
+
+        rctx.file(
+            "%s/vcpkg_build/%s_build.bzl" % (
+                package,
+                package_escaped,
+            ),
+            _VCPKG_BUILD_BZL_TPL.format(
+                package = package,
+                package_escaped = package_escaped,
+                cpus = "1" if not package in rctx.attr.packages_cpus else rctx.attr.packages_cpus[package],
+                host_cpus = host_cpu_count,
+            ),
+        )
+
         rctx.file(
             "%s/vcpkg_build/BUILD.bazel" % package,
             _VCPKG_BUILD_TPL.format(
                 package = package,
+                package_escaped = package_escaped,
                 bootstrap_repo = rctx.attr.bootstrap_repo,
                 features = format_inner_list(info["features"]),
                 build_deps = format_inner_list(info["deps"], pattern = "\"//{dep}/vcpkg_build\""),
-                cpus = "1" if not package in rctx.attr.packages_cpus else rctx.attr.packages_cpus[package],
             ),
         )
 

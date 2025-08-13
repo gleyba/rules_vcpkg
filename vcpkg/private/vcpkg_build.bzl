@@ -19,10 +19,21 @@ VcpkgPackageDepsInfo = provider(
     ],
 )
 
-def _unwrap_cpus_count(cpus, host_cpus):
-    if cpus == "HOST_CPUS":
-        return str(host_cpus)
-    return cpus
+_INT_TYPE = type(42)
+_STR_TYPE = type("42")
+
+def unwrap_cpus_count(cpus, host_cpus):
+    if type(cpus) == _INT_TYPE:
+        return cpus
+    elif type(cpus) == _STR_TYPE:
+        if cpus.isdigit():
+            return int(cpus)
+        elif cpus == "HOST_CPUS":
+            return host_cpus
+        elif cpus.startswith("HOST_CPUS/"):
+            return host_cpus / int(cpus[10:])
+
+    fail("Can't substitute CPU count: %s" % cpus)
 
 def _commonprefix(m):
     if not m:
@@ -34,7 +45,7 @@ def _commonprefix(m):
             return s1[:i]
     return s1
 
-def _vcpkg_build_impl(ctx):
+def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
     vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
     vcpkg_current_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:current_toolchain_type"].vcpkg_current_info
 
@@ -154,11 +165,6 @@ def _vcpkg_build_impl(ctx):
         },
     )
 
-    cpus = _unwrap_cpus_count(
-        ctx.attr.cpus,
-        vcpkg_info.host_cpu_count,
-    )
-
     is_debug = ctx.attr._debug[BuildSettingInfo].value
     is_debug_reuse_outputs = ctx.attr._debug_reuse_outputs[BuildSettingInfo].value
 
@@ -173,13 +179,12 @@ def _vcpkg_build_impl(ctx):
         outputs = [package_output_dir],
         executable = call_vcpkg_wrapper,
         env = {
-            "VCPKG_MAX_CONCURRENCY": cpus,
+            "VCPKG_MAX_CONCURRENCY": str(cpus),
             "VCPKG_DEBUG": str(int(is_debug)),
             "VCPKG_DEBUG_REUSE_OUTPUTS": str(int(is_debug and is_debug_reuse_outputs)),
         },
-        execution_requirements = {
-            "resources:cpu:%s" % cpus: "",
-        },
+        execution_requirements = execution_requirements,
+        resource_set = resource_set,
         mnemonic = "VCPKGBuild",
     )
 
@@ -196,59 +201,61 @@ def _vcpkg_build_impl(ctx):
         deps_info,
     ]
 
-vcpkg_build = rule(
-    implementation = _vcpkg_build_impl,
-    attrs = {
-        "package_name": attr.string(mandatory = True),
-        "port": attr.label(providers = [DirectoryInfo]),
-        "buildtree": attr.label(allow_files = True),
-        "downloads": attr.label(allow_files = True),
-        "assets": attr.label(providers = [DirectoryInfo]),
-        "package_features": attr.string_list(),
-        "deps": attr.label_list(providers = [
-            VcpkgBuiltPackageInfo,
-            VcpkgPackageDepsInfo,
-        ]),
-        "cpus": attr.string(
-            mandatory = True,
-            doc = "Cpu cores to use for package build, accept `HOST_CPUS` keyword",
+def vcpkg_build(cpus, resource_set, execution_requirements):
+    return rule(
+        implementation = lambda rctx: _vcpkg_build_impl(
+            rctx,
+            cpus,
+            resource_set,
+            execution_requirements,
         ),
-        "_call_vcpkg_wrapper_tpl": attr.label(
-            default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
-            allow_single_file = True,
-            doc = "Vcpkg wrapper script template",
-        ),
-        "_prepare_install_dir": attr.label(
-            default = "@rules_vcpkg//vcpkg/vcpkg_utils:prepare_install_dir",
-            executable = True,
-            cfg = "exec",
-            doc = "Tool to prepare vcpkg install directory structure",
-        ),
-        "_validate_package_output": attr.label(
-            default = "@rules_vcpkg//vcpkg/vcpkg_utils:validate_package_output",
-            executable = True,
-            cfg = "exec",
-            doc = "Tool to validate vcpkg package output directory",
-        ),
-        "_debug": attr.label(
-            providers = [BuildSettingInfo],
-            default = "//:debug",
-        ),
-        "_debug_reuse_outputs": attr.label(
-            providers = [BuildSettingInfo],
-            default = "//:debug_reuse_outputs",
-        ),
-        "_externals": attr.label(
-            providers = [DefaultInfo],
-            default = "@vcpkg_external//:root",
-        ),
-        "_external_bins": attr.label(
-            providers = [DirectoryInfo],
-            default = "@vcpkg_external//bin",
-        ),
-    },
-    toolchains = [
-        "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
-        "@rules_vcpkg//vcpkg/toolchain:current_toolchain_type",
-    ],
-)
+        attrs = {
+            "package_name": attr.string(mandatory = True),
+            "port": attr.label(providers = [DirectoryInfo]),
+            "buildtree": attr.label(allow_files = True),
+            "downloads": attr.label(allow_files = True),
+            "assets": attr.label(providers = [DirectoryInfo]),
+            "package_features": attr.string_list(),
+            "deps": attr.label_list(providers = [
+                VcpkgBuiltPackageInfo,
+                VcpkgPackageDepsInfo,
+            ]),
+            "_call_vcpkg_wrapper_tpl": attr.label(
+                default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
+                allow_single_file = True,
+                doc = "Vcpkg wrapper script template",
+            ),
+            "_prepare_install_dir": attr.label(
+                default = "@rules_vcpkg//vcpkg/vcpkg_utils:prepare_install_dir",
+                executable = True,
+                cfg = "exec",
+                doc = "Tool to prepare vcpkg install directory structure",
+            ),
+            "_validate_package_output": attr.label(
+                default = "@rules_vcpkg//vcpkg/vcpkg_utils:validate_package_output",
+                executable = True,
+                cfg = "exec",
+                doc = "Tool to validate vcpkg package output directory",
+            ),
+            "_debug": attr.label(
+                providers = [BuildSettingInfo],
+                default = "//:debug",
+            ),
+            "_debug_reuse_outputs": attr.label(
+                providers = [BuildSettingInfo],
+                default = "//:debug_reuse_outputs",
+            ),
+            "_externals": attr.label(
+                providers = [DefaultInfo],
+                default = "@vcpkg_external//:root",
+            ),
+            "_external_bins": attr.label(
+                providers = [DirectoryInfo],
+                default = "@vcpkg_external//bin",
+            ),
+        },
+        toolchains = [
+            "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
+            "@rules_vcpkg//vcpkg/toolchain:current_toolchain_type",
+        ],
+    )

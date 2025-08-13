@@ -2,6 +2,8 @@ load("//vcpkg/bootstrap/utils:cmake_parser.bzl", "cmake_parser")
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check")
 
 def cmake_parse_downloader(rctx, bootstrap_ctx, data, mnemo, download_clbk, substitutions):
+    rctx.report_progress("Parsing %s" % mnemo)
+
     def _vcpkg_download_distfile(parse_ctx, urls, sha512):
         download_clbk(urls, sha512, parse_ctx.on_err)
 

@@ -18,12 +18,12 @@ vcpkg.install(package = "boost-asio")
 vcpkg.install(package = "fmt")
 vcpkg.install(package = "openssl")
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "openssl",
 )
 vcpkg.install(package = "folly")
 vcpkg.configure(
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "folly",
     src_patches = [
         "//hello_folly:folly_src.patch",
@@ -34,7 +34,7 @@ vcpkg.configure(
     buildtree_fixups = [
         "rm -rf ${BUILDTREE_DIR}/src/*.clean/data/csv/glob/crawl/.symbolic_link",
     ],
-    cpus = "HOST_CPUS",
+    cpus = "HOST_CPUS/2",
     package = "duckdb",
 )
 use_repo(

@@ -13,6 +13,7 @@ vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
     commit = "9e8416f15d93fa9347e3291bd8c128dd44200ba5",
     sha256 = "54aa9cc47ce67cc35664eb9ad455f9201d749d008d89c95072621b78f96d48ed",
+    # verbose = True,
 )
 vcpkg.configure(
     cpus = "HOST_CPUS",
