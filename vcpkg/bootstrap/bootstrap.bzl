@@ -52,10 +52,10 @@ def _initialize(rctx, bootstrap_ctx):
     rctx.template(
         "%s/overlay_triplets/%s.cmake" % (
             bootstrap_ctx.output,
-            bootstrap_ctx.pu.cmake_definitions.triplet,
+            bootstrap_ctx.pu.definitions.triplet,
         ),
         bootstrap_ctx.pu.triplet_template,
-        substitutions = bootstrap_ctx.pu.cmake_definitions.substitutions | format_additions(
+        substitutions = bootstrap_ctx.pu.definitions.substitutions | format_additions(
             {},
             DEFAULT_TRIPLET_SETS,
         ),

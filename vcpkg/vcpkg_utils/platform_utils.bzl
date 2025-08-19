@@ -64,20 +64,24 @@ platform_defs = struct(
         macos = struct(
             short_name = "osx",
             long_name = "Darwin",
+            name = "macos",
         ),
         linux = struct(
             short_name = "linux",
             long_name = "Linux",
+            name = "linux",
         ),
     ),
     arch = struct(
         amd64 = struct(
             short_name = "x64",
             long_name = "x86_64",
+            name = "amd64",
         ),
         arm64 = struct(
             short_name = "arm64",
             long_name = "arm64",
+            name = "arm64",
         ),
     ),
 )
@@ -96,34 +100,36 @@ def _to_triplet(os, arch):
         os.short_name,
     )
 
-def _to_cmake_defs(os, arch):
+def _to_definitions(os, arch):
     return struct(
         substitutions = _to_substitutions(os, arch),
         triplet = _to_triplet(os, arch),
+        os = os,
+        arch = arch,
     )
 
-cmake_definitions = struct(
+definitions = struct(
     linux = struct(
-        amd64 = _to_cmake_defs(platform_defs.os.linux, platform_defs.arch.amd64),
-        arm64 = _to_cmake_defs(platform_defs.os.linux, platform_defs.arch.arm64),
+        amd64 = _to_definitions(platform_defs.os.linux, platform_defs.arch.amd64),
+        arm64 = _to_definitions(platform_defs.os.linux, platform_defs.arch.arm64),
     ),
     macos = struct(
-        amd64 = _to_cmake_defs(platform_defs.os.macos, platform_defs.arch.amd64),
-        arm64 = _to_cmake_defs(platform_defs.os.macos, platform_defs.arch.arm64),
+        amd64 = _to_definitions(platform_defs.os.macos, platform_defs.arch.amd64),
+        arm64 = _to_definitions(platform_defs.os.macos, platform_defs.arch.arm64),
     ),
 )
 
-def _cmake_definitions(rctx):
+def _definitions(rctx):
     if _is_macos(rctx):
         if _is_arm64(rctx):
-            return cmake_definitions.macos.arm64
+            return definitions.macos.arm64
         elif _is_amd64(rctx):
-            return cmake_definitions.macos.amd64
+            return definitions.macos.amd64
     elif _is_linux(rctx):
         if _is_arm64(rctx):
-            return cmake_definitions.linux.arm64
+            return definitions.linux.arm64
         elif _is_amd64(rctx):
-            return cmake_definitions.linux.amd64
+            return definitions.linux.amd64
 
     fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
 
@@ -142,5 +148,5 @@ def platform_utils(rctx):
         downloads = _platform_downloads(rctx),
         host_cpus_count = lambda: _host_cpus_cout(rctx),
         triplet_template = _triplet_template(rctx),
-        cmake_definitions = _cmake_definitions(rctx),
+        definitions = _definitions(rctx),
     )

@@ -1,5 +1,5 @@
 load("//vcpkg/toolchain:current_toolchain.bzl", "current_toolchain")
-load("//vcpkg/vcpkg_utils:platform_utils.bzl", "cmake_definitions")
+load("//vcpkg/vcpkg_utils:platform_utils.bzl", "definitions")
 
 toolchain_type(
     name = "toolchain_type",
@@ -46,17 +46,17 @@ config_setting(
 current_toolchain(
     name = "current",
     substitutions = select({
-        ":arm64_macos": cmake_definitions.macos.arm64.substitutions,
-        ":amd64_macos": cmake_definitions.macos.amd64.substitutions,
-        ":arm64_linux": cmake_definitions.linux.arm64.substitutions,
-        ":amd64_linux": cmake_definitions.linux.amd64.substitutions,
+        ":arm64_macos": definitions.macos.arm64.substitutions,
+        ":amd64_macos": definitions.macos.amd64.substitutions,
+        ":arm64_linux": definitions.linux.arm64.substitutions,
+        ":amd64_linux": definitions.linux.amd64.substitutions,
     }),
     toolchain_template = "//vcpkg/toolchain/triplets:toolchain.tmpl.cmake",
     triplet = select({
-        ":arm64_macos": cmake_definitions.macos.arm64.triplet,
-        ":amd64_macos": cmake_definitions.macos.amd64.triplet,
-        ":arm64_linux": cmake_definitions.linux.arm64.triplet,
-        ":amd64_linux": cmake_definitions.linux.amd64.triplet,
+        ":arm64_macos": definitions.macos.arm64.triplet,
+        ":amd64_macos": definitions.macos.amd64.triplet,
+        ":arm64_linux": definitions.linux.arm64.triplet,
+        ":amd64_linux": definitions.linux.amd64.triplet,
     }),
     triplet_template = select({
         "@platforms//os:osx": "//vcpkg/toolchain/triplets:macos.tmpl.cmake",

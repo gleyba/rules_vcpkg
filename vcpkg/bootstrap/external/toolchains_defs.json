@@ -1,0 +1,160 @@
+{
+    "macos": {
+        "download_and_extract": [
+            {
+                "url": "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-macos-universal.tar.gz",
+                "sha256": "4c53ba41092617d1be2205dbc10bb5873a4c5ef5e9e399fc927ffbe78668a6d3",
+                "strip_prefix": "cmake-4.0.2-macos-universal/CMake.app/Contents",
+                "output": "cmake"   
+            }, {
+                "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-mac.zip",
+                "sha256": "229314c7ef65e9c11d19f84e5f4bb374105a4f21f64ed55e8f403df765ab52a7",
+                "output": "bin"
+            }
+        ],
+        "symlink": [
+            { 
+                "target": "/usr/sbin/sysctl", 
+                "link_name": "bin/sysctl" 
+            }, { 
+                "target": "/usr/bin/otool",
+                "link_name": "bin/otool" 
+            }, { 
+                "target": "/usr/bin/file",
+                "link_name": "bin/file" 
+            }, { 
+                "target": "/usr/bin/install_name_tool",
+                "link_name": "bin/install_name_tool" 
+            }, { 
+                "target": "/usr/bin/codesign",
+                "link_name": "bin/codesign" 
+            }, { 
+                "target": "/usr/bin/ranlib",
+                "link_name": "bin/ranlib" 
+            }, { 
+                "target": "/usr/bin/ar",
+                "link_name": "bin/ar" 
+            }, { 
+                "target": "/usr/bin/lipo",
+                "link_name": "bin/lipo" 
+            }, { 
+                "target": "/usr/bin/clang",
+                "link_name": "bin/clang" 
+            }, { 
+                "target": "/usr/bin/clang++",
+                "link_name": "bin/clang++"
+            }
+        ]
+    },
+    "macos_arm64": {
+        "download_and_extract": [
+            {
+                "url": "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-aarch64-apple-darwin.tar.gz",
+                "sha256": "7d8068f3d11278d96f78eb42b67d240bb8fb2386724ea597481e97ec75265d9c",
+                "strip_prefix": "coreutils-0.1.0-aarch64-apple-darwin",
+                "output": "coreutils"
+            }, {
+                "url": "https://github.com/skaji/relocatable-perl/releases/download/5.40.1.0/perl-darwin-arm64.tar.xz",
+                "sha256": "e58b98338bc52f352dc95310363ab6c725897557512b90b593c70ea357f1b2ab",
+                "strip_prefix": "perl-darwin-arm64",
+                "output": "perl"
+            }, {
+                "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-aarch64-apple-darwin-install_only_stripped.tar.gz",
+                "sha256": "7b32a1368af181ef16b2739f65849bb74d4ef1f324613ad9022d6f6fe3bb25f0",
+                "strip_prefix": "python"
+            }
+        ]
+    },
+    "macos_amd64": {
+        "download_and_extract": [
+            {
+                "url": "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-x86_64-apple-darwin.tar.gz",
+                "sha256": "0a27f09f03811289b9ddcff8c6b7c1bf6e971b5eac3dd536208a40e2c1ea9cd9",
+                "strip_prefix": "coreutils-0.1.0-x86_64-apple-darwin",
+                "output": "coreutils"
+            }, {
+                "url": "https://github.com/skaji/relocatable-perl/releases/download/5.40.0.1/perl-darwin-amd64.tar.xz",
+                "sha256": "bbae274421e61075a20b105434d3bf3cc168fc2fc78da4d24d04235a072cb506",
+                "strip_prefix": "perl-darwin-amd64",
+                "output": "perl"
+            }, {
+                "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
+                "sha256": "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
+                "strip_prefix": "python"
+            }
+        ]
+    },
+    "linux": {
+
+    },
+    "linux_arm64": {
+    },
+    "linux_amd64": {
+    },
+    "_": {
+        "extract": [
+            { 
+                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/autoconf.zip",
+                "strip_prefix": "autoconf"
+            }, { 
+                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/automake.zip",
+                "strip_prefix": "automake"
+            }, { 
+                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/libtool.zip",
+                "strip_prefix": "libtool"
+            }, { 
+                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/pkgconfig.zip",
+                "strip_prefix": "pkgconfig"
+            },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/m4.zip" },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/bison.zip" },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/flex.zip" },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/make.zip" },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/gsed.zip" },
+            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/autoconf_archive.zip" }
+        ],
+        "symlink": [
+            { 
+                "target": "/bin/bash", 
+                "link_name": "bin/bash" 
+            }, { 
+                "target": "/bin/sh", 
+                "link_name": "bin/sh" 
+            }, { 
+                "target": "/usr/bin/git", 
+                "link_name": "bin/git" 
+            }, { 
+                "target": "/usr/bin/grep", 
+                "link_name": "bin/grep"
+            }, { 
+                "target": "/usr/bin/sed", 
+                "link_name": "bin/sed" 
+            }, { 
+                "target": "/usr/bin/cmp", 
+                "link_name": "bin/cmp"
+            }, { 
+                "target": "/usr/bin/awk", 
+                "link_name": "bin/awk"
+            }, { 
+                "target": "/usr/bin/vm_stat", 
+                "link_name": "bin/vm_stat"
+            }, { 
+                "target": "/usr/bin/find",
+                "link_name": "bin/find"
+            }, { 
+                "target": "/usr/sbin/zic", 
+                "link_name": "bin/zic" 
+            }
+        ],
+        "symlink_rel": [
+            {
+                "target": "../cmake/bin/cmake",
+                "link_name": "bin/cmake"
+            }, {
+                "target": "../perl/bin/perl",
+                "link_name": "bin/perl"
+            }
+        ],
+        "symlink_coreutils": []
+    }
+}
