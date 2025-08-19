@@ -15,6 +15,9 @@ def _platform_prefix(rctx):
     if _is_macos(rctx):
         os = "osx"
 
+    if _is_linux(rctx):
+        os = "linux"
+
     arch = None
     if _is_arm64(rctx):
         arch = "arm64"
@@ -32,6 +35,9 @@ def _platform_targets(rctx):
     if _is_macos(rctx):
         os = "@platforms//os:macos"
 
+    if _is_linux(rctx):
+        os = "@platforms//os:linux"
+
     arch = None
     if _is_arm64(rctx):
         arch = "@platforms//cpu:aarch64"
@@ -47,6 +53,15 @@ def _platform_targets(rctx):
 def _platform_downloads(rctx):
     url_tpl = None
     sha_key = None
+    if _is_linux(rctx):
+        if _is_arm64(rctx):
+            url_tpl = "https://github.com/microsoft/vcpkg-tool/releases/download/%s/vcpkg-glibc-arm64"
+            sha_key = "VCPKG_GLIBC_ARM64_SHA"
+
+        if _is_amd64(rctx):
+            url_tpl = "https://github.com/microsoft/vcpkg-tool/releases/download/%s/vcpkg-glibc"
+            sha_key = "VCPKG_GLIBC_SHA"
+
     if _is_macos(rctx):
         url_tpl = "https://github.com/microsoft/vcpkg-tool/releases/download/%s/vcpkg-macos"
         sha_key = "VCPKG_MACOS_SHA"
@@ -57,7 +72,13 @@ def _platform_downloads(rctx):
     return struct(url_tpl = url_tpl, sha_key = sha_key)
 
 def _host_cpus_cout(rctx):
-    return rctx.execute(["sysctl", "-n", "hw.ncpu"]).stdout.strip()
+    if _is_macos(rctx):
+        return rctx.execute(["sysctl", "-n", "hw.ncpu"]).stdout.strip()
+
+    if _is_linux(rctx):
+        return rctx.execute(["nproc"]).stdout.strip()
+
+    fail("Unsupported OS: %s" % rctx.os.name)
 
 platform_defs = struct(
     os = struct(

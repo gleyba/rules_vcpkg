@@ -85,11 +85,107 @@
         ]
     },
     "linux": {
-
+        "symlink": [
+            { 
+                "target": "/usr/bin/gcc",
+                "link_name": "bin/gcc" 
+            }, { 
+                "target": "/usr/bin/g++",
+                "link_name": "bin/g++"
+            }, { 
+                "target": "/usr/bin/cc",
+                "link_name": "bin/cc" 
+            }, { 
+                "target": "/usr/bin/cpp",
+                "link_name": "bin/cpp"
+            }, { 
+                "target": "/usr/bin/as",
+                "link_name": "bin/as"
+            }, { 
+                "target": "/usr/bin/ld",
+                "link_name": "bin/ld"
+            }
+        ]
     },
     "linux_arm64": {
+        "download_and_extract": [
+            {
+                "url": "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-aarch64-unknown-linux-musl.tar.gz",
+                "sha256": "6572292ee74bb6a7efa88f05d0d0a7a5c696bae0ae341a438b983ae7775c9d47",
+                "strip_prefix": "coreutils-0.1.0-aarch64-unknown-linux-musl",
+                "output": "coreutils"
+            }, {
+                "url": "https://github.com/skaji/relocatable-perl/releases/download/5.40.0.1/perl-linux-arm64.tar.xz",
+                "sha256": "27d93e66b474cbcb3abbbc04304c3a19f370a0bdf8fd4b057b15e338a282964f",
+                "strip_prefix": "perl-linux-arm64",
+                "output": "perl"
+            }, {
+                "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz",
+                "sha256": "e39b0b3d68487020cbd90e8ab66af334769059b9d4200901da6a6d0af71a0033",
+                "strip_prefix": "python"
+            }, {
+                "url": "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-linux-aarch64.tar.gz",
+                "sha256": "7a88303641c85ce1af09dfc4ffc201520bc7061f71ceafbf59680fc42af7d553",
+                "strip_prefix": "cmake-4.0.2-linux-aarch64",
+                "output": "cmake"   
+            }, {
+                "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-linux-aarch64.zip",
+                "sha256": "b2b2f956963ef6300841c253a7aa81c3e9e5dbd2ed059bee6f8bcd851b5bb096",
+                "output": "bin"
+            }
+        ],
+        "symlink": [
+            { 
+                "target": "/usr/bin/aarch64-linux-gnu-gcc",
+                "link_name": "bin/aarch64-linux-gnu-gcc" 
+            }, { 
+                "target": "/usr/bin/aarch64-linux-gnu-g++",
+                "link_name": "bin/aarch64-linux-gnu-g++"
+            }, { 
+                "target": "/usr/bin/aarch64-linux-gnu-as",
+                "link_name": "bin/aarch64-linux-gnu-as"
+            }
+        ]
     },
     "linux_amd64": {
+        "download_and_extract": [
+            {
+                "url": "https://github.com/uutils/coreutils/releases/download/0.1.0/coreutils-0.1.0-x86_64-unknown-linux-musl.tar.gz",
+                "sha256": "463648347b1fc337414a864bda960c9cbd1bd4a540f344c010ff5bb35199e6d7",
+                "strip_prefix": "coreutils-0.1.0-x86_64-unknown-linux-musl",
+                "output": "coreutils"
+            }, {
+                "url": "https://github.com/skaji/relocatable-perl/releases/download/5.40.0.1/perl-linux-amd64.tar.xz",
+                "sha256": "071a067b56525d96c2e005e4ea06e856f382dd7ee996846c1bbf19442e3fd50c",
+                "strip_prefix": "perl-linux-amd64",
+                "output": "perl"
+            }, {
+                "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+                "sha256": "096a6301b7029d11db44b1fd4364a3d474a3f5c7f2cd9317521bc58abf40b990",
+                "strip_prefix": "python"
+            }, {
+                "url": "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-linux-x86_64.tar.gz",
+                "sha256": "80940e81de61584fe4eedd3c40adc597d7c5b76ad8709668007b467a3c2a36c7",
+                "strip_prefix": "cmake-4.0.2-linux-x86_64",
+                "output": "cmake"   
+            }, {
+                "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-linux.zip",
+                "sha256": "46aa8ad0a431e9b6e39f6ca0abc47bf8b13be094e3ac7d0f6d39e94bbdc746f9",
+                "output": "bin"
+            }
+        ],
+        "symlink": [
+            { 
+                "target": "/usr/bin/x86_64-linux-gnu-gcc",
+                "link_name": "bin/x86_64-linux-gnu-gcc" 
+            }, { 
+                "target": "/usr/bin/x86_64-linux-gnu-g++",
+                "link_name": "bin/x86_64-linux-gnu-g++"
+            }, { 
+                "target": "/usr/bin/x86_64-linux-gnu-as",
+                "link_name": "bin/x86_64-linux-gnu-as"
+            }
+        ]
     },
     "_": {
         "extract": [

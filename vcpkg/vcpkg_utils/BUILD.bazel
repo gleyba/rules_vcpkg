@@ -2,8 +2,12 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 _COMMON_COPTS = [
     "-std=c++17",
-    "-mmacosx-version-min=14.0",
-]
+] + select({
+    "@platforms//os:osx": [
+        "-mmacosx-version-min=14.0",
+    ],
+    "//conditions:default": [],
+})
 
 config_setting(
     name = "is_release_build",
