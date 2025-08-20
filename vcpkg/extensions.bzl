@@ -2,6 +2,7 @@ load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap:declare.bzl", "declare")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict")
+load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
@@ -40,6 +41,14 @@ Environment variable 'BUILDTREE_DIR' and will be available.
     "src_patches": attr.label_list(
         doc = "Patches to apply to package src dir",
     ),
+    "os": attr.string(
+        default = "*",
+        doc = "Filter by os, e.g. macos, linux, or '*' for any",
+    ),
+    "arch": attr.string(
+        default = "*",
+        doc = "Filter by arch, e.g. amd64, arm64, or '*' for any",
+    ),
 })
 
 _configure_prefixed = tag_class(attrs = {
@@ -48,6 +57,7 @@ _configure_prefixed = tag_class(attrs = {
 })
 
 def _vcpkg(mctx):
+    pu = platform_utils(mctx)
     cur_bootstrap = None
     packages = set()
     packages_cpus = {}
@@ -72,6 +82,9 @@ def _vcpkg(mctx):
             packages.add(install.package)
 
         for configure in mod.tags.configure:
+            if not pu.match_platform(configure.os, configure.arch):
+                continue
+
             if configure.cpus:
                 packages_cpus[configure.package] = configure.cpus
 

@@ -161,6 +161,33 @@ def _triplet_template(rctx):
         return Label("//vcpkg/toolchain/triplets:linux.tmpl.cmake")
     fail("Unsupported OS: %s" % rctx.os.name)
 
+def _match_os(rctx, os):
+    if os == "*":
+        return True
+
+    if os == "macos":
+        return _is_macos(rctx)
+
+    if os == "linux":
+        return _is_linux(rctx)
+
+    fail("Unsupported requested OS to match: %s" % os)
+
+def _match_arch(rctx, arch):
+    if arch == "*":
+        return True
+
+    if arch == "arm64":
+        return _is_arm64(rctx)
+
+    if arch == "amd64":
+        return _is_amd64(rctx)
+
+    fail("Unsupported requested ARCH to match: %s" % arch)
+
+def _match_platform(rctx, os, arch):
+    return _match_os(rctx, os) and _match_arch(rctx, arch)
+
 def platform_utils(rctx):
     """Platform utils for vcpkg"""
     return struct(
@@ -170,4 +197,5 @@ def platform_utils(rctx):
         host_cpus_count = lambda: _host_cpus_cout(rctx),
         triplet_template = _triplet_template(rctx),
         definitions = _definitions(rctx),
+        match_platform = lambda os, arch: _match_platform(rctx, os, arch),
     )
