@@ -9,6 +9,7 @@ For debug purposes, better to run with such lines in `.user.bazelrc`:
 
     build --@rules_vcpkg//:debug=True
     build --@rules_vcpkg//:debug_reuse_outputs=True
+    build --noincompatible_sandbox_hermetic_tmp
 
 Probably it is just not a good idea to build this with Bazel. 
 But I choose it as a goal and prove maturity of the toolchain.

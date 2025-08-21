@@ -114,6 +114,7 @@ def vcpkg_lib(
         name = "vcpkg_%s_info" % package,
         hdrs = [info_header],
         srcs = [info_source],
+        alwayslink = True,
         linkstatic = True,
         visibility = ["//visibility:public"],
     )

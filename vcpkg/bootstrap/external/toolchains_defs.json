@@ -32,9 +32,6 @@
                 "target": "/usr/bin/ranlib",
                 "link_name": "bin/ranlib" 
             }, { 
-                "target": "/usr/bin/ar",
-                "link_name": "bin/ar" 
-            }, { 
                 "target": "/usr/bin/lipo",
                 "link_name": "bin/lipo" 
             }, { 
@@ -43,6 +40,9 @@
             }, { 
                 "target": "/usr/bin/clang++",
                 "link_name": "bin/clang++"
+            }, { 
+                "target": "/usr/bin/vm_stat", 
+                "link_name": "bin/vm_stat"
             }
         ]
     },
@@ -104,6 +104,9 @@
             }, { 
                 "target": "/usr/bin/ld",
                 "link_name": "bin/ld"
+            }, { 
+                "target": "/usr/bin/ar",
+                "link_name": "bin/ar" 
             }
         ]
     },
@@ -231,9 +234,6 @@
             }, { 
                 "target": "/usr/bin/awk", 
                 "link_name": "bin/awk"
-            }, { 
-                "target": "/usr/bin/vm_stat", 
-                "link_name": "bin/vm_stat"
             }, { 
                 "target": "/usr/bin/find",
                 "link_name": "bin/find"

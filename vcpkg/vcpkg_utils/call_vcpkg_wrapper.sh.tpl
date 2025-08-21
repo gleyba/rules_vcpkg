@@ -4,6 +4,7 @@ set -eu
 
 export HOME=/tmp/home
 export PATH="${PWD}/__bin_dir__" #  ":${PWD}/__cur_bin_dir__:/usr/bin:/bin"
+export M4="${PWD}/__bin_dir__/m4"
 
 export VCPKG_EXEC_ROOT="${PWD}"
 # export CC="__cxx_compiler__"
@@ -44,6 +45,7 @@ fi
 
 install_root_tmp="${buildtrees_tmp}/install"
 mkdir -p "${install_root_tmp}"
+
 ln -sf "${VCPKG_EXEC_ROOT}/__downloads_root__" "${buildtrees_tmp}/downloads"
 
 "${prepare_install_dir_bin}" \

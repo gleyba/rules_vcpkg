@@ -34,22 +34,14 @@ load(":{package_escaped}_build.bzl", "{package_escaped}_build")
 """
 
 _VCPKG_LIB_HEADER_TPL = """\
-#include <string>
-
-namespace rules_vcpkg {{
-    std::string {package_as_fn}_info();
-}}
+const char* {package_as_fn}_info();
 """
 
 _VCPKG_LIB_SOURCE_TPL = """\
-#include <string>
+#include "vcpkg_{package}_info.h"
 
-#include "vcpkg_{package}_info.hpp"
-
-namespace rules_vcpkg {{
-    std::string {package_as_fn}_info() {{
-        return "{package}";
-    }}
+const char* {package_as_fn}_info() {{
+    return "{package}";
 }}
 """
 
@@ -60,8 +52,8 @@ vcpkg_lib(
     package = "{package}",
     build = "//{package}/vcpkg_build",
     deps = {lib_deps},
-    info_header = "vcpkg_{package}_info.hpp",
-    info_source = "vcpkg_{package}_info.cpp",
+    info_header = "vcpkg_{package}_info.h",
+    info_source = "vcpkg_{package}_info.c",
     include_postfixes = {include_postfixes},
     visibility = ["//:__subpackages__"],
 )
@@ -121,12 +113,12 @@ def _declare_impl(rctx):
         package_as_fn = package.replace("-", "_")
 
         rctx.file(
-            "{package}/libs/vcpkg_{package}_info.hpp".format(package = package),
+            "{package}/libs/vcpkg_{package}_info.h".format(package = package),
             _VCPKG_LIB_HEADER_TPL.format(package_as_fn = package_as_fn),
         )
 
         rctx.file(
-            "{package}/libs/vcpkg_{package}_info.cpp".format(package = package),
+            "{package}/libs/vcpkg_{package}_info.c".format(package = package),
             _VCPKG_LIB_SOURCE_TPL.format(
                 package = package,
                 package_as_fn = package_as_fn,
