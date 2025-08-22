@@ -147,6 +147,42 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//vcpkg:extensions.bzl%vcpkg_external": {
+      "general": {
+        "bzlTransitiveDigest": "LHGiNf400Klsvq/W0/z3rJ8dhvbUBAJ3d063ntWVdwI=",
+        "usagesDigest": "oj3fpFM7521B136wND1t2N2Azeuer89sMtRjpAlffPI=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "vcpkg_external": {
+            "repoRuleId": "@@//vcpkg/bootstrap:bootstrap_toolchains.bzl%bootstrap_toolchains",
+            "attributes": {}
+          },
+          "cc_toolchain_util.bzl": {
+            "repoRuleId": "@@//vcpkg/bootstrap/external:cc_toolchain_util.bzl%cc_toolchain_util",
+            "attributes": {}
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "aspect_bazel_lib",
+            "aspect_bazel_lib+"
+          ],
+          [
+            "",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ],
+          [
+            "",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
+      }
+    },
     "@@buildifier_prebuilt+//:defs.bzl%buildifier_prebuilt_deps_extension": {
       "general": {
         "bzlTransitiveDigest": "X67aPQER7Ge9vxgB16pXU8HvbgAOOUzmz+S0EgyRtNc=",

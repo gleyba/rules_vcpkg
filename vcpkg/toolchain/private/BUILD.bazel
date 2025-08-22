@@ -1,0 +1,8 @@
+load(":vcpkg_cc_info.bzl", "cc_flags", "vcpkg_cc_info")
+
+cc_flags(name = "cc_flags")
+
+vcpkg_cc_info(
+    name = "vcpkg_cc_info",
+    visibility = ["//visibility:public"],
+)

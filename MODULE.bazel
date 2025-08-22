@@ -11,7 +11,11 @@ bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
 bazel_dep(name = "rules_cc", version = "0.1.4")
 
 vcpkg_external = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg_external")
-use_repo(vcpkg_external, "vcpkg_external")
+use_repo(
+    vcpkg_external,
+    "cc_toolchain_util.bzl",
+    "vcpkg_external",
+)
 
 register_toolchains("//vcpkg/toolchain:current_toolchain")
 

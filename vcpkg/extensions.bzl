@@ -1,6 +1,7 @@
 load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap:declare.bzl", "declare")
+load("//vcpkg/bootstrap/external:cc_toolchain_util.bzl", "cc_toolchain_util")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
@@ -151,6 +152,10 @@ vcpkg = module_extension(
     },
 )
 
+def _vcpkg_external_impl(_mctx):
+    bootstrap_toolchains(name = "vcpkg_external")
+    cc_toolchain_util(name = "cc_toolchain_util.bzl")
+
 vcpkg_external = module_extension(
-    implementation = lambda _: bootstrap_toolchains(name = "vcpkg_external"),
+    implementation = _vcpkg_external_impl,
 )
