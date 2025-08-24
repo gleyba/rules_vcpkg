@@ -58,18 +58,25 @@ VcpkgCCInfo = provider(
         cc = "C compiler",
         cxx = "C++ compiler",
         ar = "AR executable",
+        cc_flags = "Common C compiler flags",
+        cxx_flags = "Common C++ compiler flags",
+        linker_flags = "Common C/C++ linker flags",
         opt_cc_flags = "C compiler flags in release",
         opt_cxx_flags = "C++ compiler flags in release",
-        opt_cxx_linker_shared = "C++ linker flags when linking shared library in release",
-        opt_cxx_linker_static = "C++ linker flags when linking static library in release",
-        opt_cxx_linker_executable = "C++ linker flags when linking executable in release",
+        opt_cxx_linker_shared = "C/C++ linker flags when linking shared library in release",
+        opt_cxx_linker_executable = "C/C++ linker flags when linking executable in release",
         dbg_cc_flags = "C compiler flags in debug",
         dbg_cxx_flags = "C++ compiler flags in debug",
-        dbg_cxx_linker_shared = "C++ linker flags when linking shared library in debug",
-        dbg_cxx_linker_static = "C++ linker flags when linking static library in debug",
-        dbg_cxx_linker_executable = "C++ linker flags when linking executable in debug",
+        dbg_cxx_linker_shared = "C/C++ linker flags when linking shared library in debug",
+        dbg_cxx_linker_executable = "C/C++ linker flags when linking executable in debug",
     ),
 )
+
+def _find_commons(set_a, set_b):
+    set_a = set(set_a)
+    set_b = set(set_b)
+    common = set_a.intersection(set_b)
+    return common, set_a.difference(common), set_b.difference(common)
 
 def _vcpkg_cc_info_impl(ctx):
     tools_info = get_tools_info(ctx)
@@ -77,6 +84,27 @@ def _vcpkg_cc_info_impl(ctx):
 
     opt_flags = ctx.attr._cc_opt_flags[0][CxxFlagsInfo]
     dbg_flags = ctx.attr._cc_dbg_flags[0][CxxFlagsInfo]
+
+    cc_flags, opt_cc_flags, debug_cc_flags = _find_commons(opt_flags.cc, dbg_flags.cc)
+    cxx_flags, opt_cxx_flags, debug_cxx_flags = _find_commons(opt_flags.cxx, dbg_flags.cxx)
+
+    opt_cxx_linker_shared = set(opt_flags.cxx_linker_shared)
+    opt_cxx_linker_executable = set(opt_flags.cxx_linker_executable)
+
+    dbg_cxx_linker_shared = set(dbg_flags.cxx_linker_shared)
+    dbg_cxx_linker_executable = set(dbg_flags.cxx_linker_executable)
+
+    linker_flags = opt_cxx_linker_shared.intersection(
+        opt_cxx_linker_executable,
+        dbg_cxx_linker_shared,
+        dbg_cxx_linker_executable,
+    )
+
+    opt_linker_flags_shared = opt_cxx_linker_shared.difference(linker_flags, opt_flags.cxx_linker_executable)
+    opt_linker_flags_exe = opt_cxx_linker_executable.difference(linker_flags, opt_cxx_linker_shared)
+
+    dbg_linker_flags_shared = dbg_cxx_linker_shared.difference(linker_flags, dbg_flags.cxx_linker_executable)
+    dbg_linker_flags_exe = dbg_cxx_linker_executable.difference(linker_flags, dbg_cxx_linker_shared)
 
     cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
 
@@ -88,16 +116,17 @@ def _vcpkg_cc_info_impl(ctx):
         cc = _resolve_tool_path(tools_info.cc),
         cxx = _resolve_tool_path(tools_info.cxx),
         ar = _determine_ar(ctx.attr.is_macos, cc_toolchain.cc),
-        opt_cc_flags = _to_flags_list(opt_flags.cc),
-        opt_cxx_flags = _to_flags_list(opt_flags.cxx),
-        opt_cxx_linker_shared = _to_flags_list(opt_flags.cxx_linker_shared),
-        opt_cxx_linker_static = _to_flags_list(opt_flags.cxx_linker_static),
-        opt_cxx_linker_executable = _to_flags_list(opt_flags.cxx_linker_executable),
-        dbg_cc_flags = _to_flags_list(dbg_flags.cc),
-        dbg_cxx_flags = _to_flags_list(dbg_flags.cxx),
-        dbg_cxx_linker_shared = _to_flags_list(dbg_flags.cxx_linker_shared),
-        dbg_cxx_linker_static = _to_flags_list(dbg_flags.cxx_linker_static),
-        dbg_cxx_linker_executable = _to_flags_list(dbg_flags.cxx_linker_executable),
+        cc_flags = _to_flags_list(cc_flags),
+        cxx_flags = _to_flags_list(cxx_flags),
+        linker_flags = _to_flags_list(linker_flags),
+        opt_cc_flags = _to_flags_list(opt_cc_flags),
+        opt_cxx_flags = _to_flags_list(opt_cxx_flags),
+        opt_cxx_linker_shared = _to_flags_list(opt_linker_flags_shared),
+        opt_cxx_linker_executable = _to_flags_list(opt_linker_flags_exe),
+        dbg_cc_flags = _to_flags_list(debug_cc_flags),
+        dbg_cxx_flags = _to_flags_list(debug_cxx_flags),
+        dbg_cxx_linker_shared = _to_flags_list(dbg_linker_flags_shared),
+        dbg_cxx_linker_executable = _to_flags_list(dbg_linker_flags_exe),
     )
 
     # for attr in dir(result):
