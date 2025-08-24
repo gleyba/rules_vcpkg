@@ -100,8 +100,8 @@ def _vcpkg_cc_info_impl(ctx):
         dbg_cxx_linker_executable = _to_flags_list(dbg_flags.cxx_linker_executable),
     )
 
-    # for attr in dir(result):
-    #     print("%s:\n%s" % (attr, getattr(result, attr)))
+    for attr in dir(result):
+        print("%s:\n%s" % (attr, getattr(result, attr)))
 
     return result
 

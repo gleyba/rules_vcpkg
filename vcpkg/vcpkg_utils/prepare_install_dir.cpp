@@ -116,8 +116,15 @@ const std::string s_venv_postfix = "-venv";
 void prepare_build_root(
     const fs::path& buildtrees_root, 
     const fs::path& buildtrees_tmp,
-    bool reuse_install_dirs
+    bool reuse_install_dirs,
+    bool reuse_sources
 ) {
+    fs::copy_options co = reuse_sources 
+        ? fs::copy_options::skip_existing
+        : reuse_install_dirs
+            ? fs::copy_options::update_existing
+            : fs::copy_options::none;
+
     for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
         for (const auto& package_inner_entry:  fs::directory_iterator { package_buildtree_entry.path() }) {
             fs::path entry_path = package_inner_entry.path();
@@ -130,11 +137,11 @@ void prepare_build_root(
 
                     fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
                     dst.replace_extension("");
-                    copy_sources(src, dst, reuse_install_dirs, false);
+                    copy_sources(src, dst, co, false);
                 }
             } else if (ends_with(entry_path.string(), s_venv_postfix)) {
                 fs::path dst =  buildtrees_tmp / entry_path.lexically_relative(buildtrees_root);
-                copy_sources(entry_path, dst, reuse_install_dirs, true);
+                copy_sources(entry_path, dst, co, true);
             }
         }
     }
@@ -146,6 +153,7 @@ int main(int argc, char ** argv) {
     fs::path packages_outputs_list_path { argv[2] };
     fs::path buildtrees_root { argv[3] };
     bool reuse_install_dirs = strcmp(argv[4], "1") == 0;
+    bool reuse_sources = strcmp(argv[5], "1") == 0;
 
     prepare_install_dir(
         install_dir, 
@@ -156,7 +164,8 @@ int main(int argc, char ** argv) {
     prepare_build_root(
         buildtrees_root, 
         buildtrees_tmp,
-        reuse_install_dirs
+        reuse_install_dirs,
+        reuse_sources
     );
 
     return 0;

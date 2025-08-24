@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 void copy_sources(
     const fs::path& src,
     const fs::path& dst,
-    bool reuse_existing,
+    std::filesystem::copy_options co,
     bool use_symlinks
 ) {
     fs::create_directories(dst);
@@ -20,16 +20,14 @@ void copy_sources(
             copy_sources(
                 buildtree_entry_path,
                 dst_builtree_path,
-                reuse_existing,
+                co,
                 use_symlinks
             );
         } else if (!use_symlinks) {
             fs::copy_file(
                 buildtree_entry_path, 
                 dst_builtree_path,
-                reuse_existing
-                    ? fs::copy_options::update_existing
-                    : fs::copy_options::none
+                co
             );
         } else {
             if (fs::exists(dst_builtree_path)) {

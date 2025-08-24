@@ -167,6 +167,7 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
 
     is_debug = ctx.attr._debug[BuildSettingInfo].value
     is_debug_reuse_outputs = ctx.attr._debug_reuse_outputs[BuildSettingInfo].value
+    is_debug_reuse_sources = ctx.attr._debug_reuse_sources[BuildSettingInfo].value
 
     ctx.actions.run(
         tools = [
@@ -182,6 +183,7 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "VCPKG_MAX_CONCURRENCY": str(cpus),
             "VCPKG_DEBUG": str(int(is_debug)),
             "VCPKG_DEBUG_REUSE_OUTPUTS": str(int(is_debug and is_debug_reuse_outputs)),
+            "VCPKG_DEBUG_REUSE_SOURCES": str(int(is_debug and is_debug_reuse_outputs)),
         },
         execution_requirements = execution_requirements,
         resource_set = resource_set,
@@ -244,6 +246,10 @@ def vcpkg_build(cpus, resource_set, execution_requirements):
             "_debug_reuse_outputs": attr.label(
                 providers = [BuildSettingInfo],
                 default = "//:debug_reuse_outputs",
+            ),
+            "_debug_reuse_sources": attr.label(
+                providers = [BuildSettingInfo],
+                default = "//:debug_reuse_sources",
             ),
             "_externals": attr.label(
                 providers = [DefaultInfo],

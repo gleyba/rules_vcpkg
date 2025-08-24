@@ -2,6 +2,10 @@
 
 set -eu
 
+if [[ "${VCPKG_DEBUG_REUSE_SOURCES}" == 1 ]]; then
+  set -x
+fi
+
 export HOME=/tmp/home
 export PATH="${PWD}/__bin_dir__"
 export M4="${PWD}/__bin_dir__/m4"
@@ -20,7 +24,7 @@ prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 if [[ "${VCPKG_DEBUG}" == 1 ]]; then
   unset VCPKG_MAX_CONCURRENCY
   buildtrees_tmp="/tmp/vcpkg/builtrees/__package_name__"
-  if [[ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 0 ]]; then 
+  if [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 0 ] && [ "${VCPKG_DEBUG_REUSE_SOURCES}" == 0 ]; then 
     rm -rf "${buildtrees_tmp}"
   fi
   echo "🚨 RULES_VCPKG 🚨: using buildtree in ${buildtrees_tmp}"
@@ -36,7 +40,7 @@ if [ "${VCPKG_DEBUG}" == 1 ] && [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]; then
     echo "⚠️ RULES_VCPKG ⚠️: reusing output from: '$packages_dir/__package_output_basename__'"
     cp -r "$packages_dir/__package_output_basename__" "__package_output_dir__"
     exit 0
-  else
+  elif [[ "${VCPKG_DEBUG_REUSE_SOURCES}" == 0 ]]; then
     rm -rf "${buildtrees_tmp}"
   fi
 fi
@@ -46,11 +50,14 @@ mkdir -p "${install_root_tmp}"
 
 ln -sf "${VCPKG_EXEC_ROOT}/__downloads_root__" "${buildtrees_tmp}/downloads"
 
+rm -rf "${buildtrees_tmp}/install"
+
 "${prepare_install_dir_bin}" \
   "${buildtrees_tmp}" \
   __packages_list_file__ \
   __buildtrees_root__ \
-  "${VCPKG_DEBUG_REUSE_OUTPUTS}"
+  "${VCPKG_DEBUG_REUSE_OUTPUTS}" \
+  "${VCPKG_DEBUG_REUSE_SOURCES}"
 
 vcpkg_args=(
   build

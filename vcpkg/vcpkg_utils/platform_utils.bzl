@@ -97,11 +97,13 @@ platform_defs = struct(
         amd64 = struct(
             short_name = "x64",
             long_name = "x86_64",
+            cmake_name = "x86_64",
             name = "amd64",
         ),
         arm64 = struct(
             short_name = "arm64",
             long_name = "arm64",
+            cmake_name = "aarch64",
             name = "arm64",
         ),
     ),
@@ -114,6 +116,7 @@ def _to_substitutions(os, arch):
         "%%SYSTEM_NAME_LONG%%": os.long_name,
         "%%ARCH_SHORT%%": arch.short_name,
         "%%ARCH_LONG%%": arch.long_name,
+        "%%ARCH_CMAKE%%": arch.cmake_name,
     }
 
 def _to_triplet(os, arch):

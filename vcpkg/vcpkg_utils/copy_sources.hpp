@@ -5,6 +5,6 @@
 void copy_sources(
     const std::filesystem::path& src,
     const std::filesystem::path& dst,
-    bool reuse_existing,
+    std::filesystem::copy_options co,
     bool use_symlinks
 );
