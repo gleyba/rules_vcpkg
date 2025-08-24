@@ -28,5 +28,7 @@ build:buildbuddy --remote_timeout=10m
 
 common --enable_platform_specific_config
 build:macos --action_env MACOSX_DEPLOYMENT_TARGET=14.0
+# For some reason, default one 'gold' linker fails on some assert
+build:linux --linkopt "-fuse-ld=lld"
 
 try-import %workspace%/.user.bazelrc
