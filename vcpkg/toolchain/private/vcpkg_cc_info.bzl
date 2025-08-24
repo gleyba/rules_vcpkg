@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@cc_toolchain_util.bzl", "CxxFlagsInfo", "get_env_vars", "get_flags_info", "get_tools_info")
 
 _collect_opt_flags_transition = transition(
@@ -26,12 +27,37 @@ cc_flags = rule(
     toolchains = ["@rules_cc//cc:toolchain_type"],
 )
 
+def _resolve_tool_path(tool_path):
+    if paths.is_absolute(tool_path):
+        return tool_path
+    else:
+        return "$ENV{VCPKG_EXEC_ROOT}/%s" % tool_path
+
+def _to_flags_list(flags):
+    return " ".join([
+        flag.replace('"', '\\\\\\"')
+            .replace("-Lexternal", "-L$ENV{VCPKG_EXEC_ROOT}/external")
+            .replace("-Iexternal", "-I$ENV{VCPKG_EXEC_ROOT}/external")
+        for flag in flags
+    ])
+
+def _determine_ar(is_macos, cc):
+    if not is_macos or not cc.ar_executable.endswith("libtool"):
+        return _resolve_tool_path(cc.ar_executable)
+
+    for file in cc.all_files.to_list():
+        if file.basename == "ar" or file.basename == "llvm-ar":
+            return _resolve_tool_path(file.path)
+
+    return "ar"
+
 VcpkgCCInfo = provider(
     doc = "Flags for the C/C++ tools, taken from the toolchain, both debug and release variant",
     fields = dict(
         env = "Environment variables",
         cc = "C compiler",
         cxx = "C++ compiler",
+        ar = "AR executable",
         opt_cc_flags = "C compiler flags in release",
         opt_cxx_flags = "C++ compiler flags in release",
         opt_cxx_linker_shared = "C++ linker flags when linking shared library in release",
@@ -52,20 +78,26 @@ def _vcpkg_cc_info_impl(ctx):
     opt_flags = ctx.attr._cc_opt_flags[0][CxxFlagsInfo]
     dbg_flags = ctx.attr._cc_dbg_flags[0][CxxFlagsInfo]
 
+    cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
+
+    # for attr in dir(cc_toolchain.cc):
+    #     print("%s:\n%s" % (attr, getattr(cc_toolchain.cc, attr)))
+
     result = VcpkgCCInfo(
         env = env_vars,
-        cc = tools_info.cc,
-        cxx = tools_info.cxx,
-        opt_cc_flags = opt_flags.cc,
-        opt_cxx_flags = opt_flags.cxx,
-        opt_cxx_linker_shared = opt_flags.cxx_linker_shared,
-        opt_cxx_linker_static = opt_flags.cxx_linker_static,
-        opt_cxx_linker_executable = opt_flags.cxx_linker_executable,
-        dbg_cc_flags = dbg_flags.cc,
-        dbg_cxx_flags = dbg_flags.cxx,
-        dbg_cxx_linker_shared = dbg_flags.cxx_linker_shared,
-        dbg_cxx_linker_static = dbg_flags.cxx_linker_static,
-        dbg_cxx_linker_executable = dbg_flags.cxx_linker_executable,
+        cc = _resolve_tool_path(tools_info.cc),
+        cxx = _resolve_tool_path(tools_info.cxx),
+        ar = _determine_ar(ctx.attr.is_macos, cc_toolchain.cc),
+        opt_cc_flags = _to_flags_list(opt_flags.cc),
+        opt_cxx_flags = _to_flags_list(opt_flags.cxx),
+        opt_cxx_linker_shared = _to_flags_list(opt_flags.cxx_linker_shared),
+        opt_cxx_linker_static = _to_flags_list(opt_flags.cxx_linker_static),
+        opt_cxx_linker_executable = _to_flags_list(opt_flags.cxx_linker_executable),
+        dbg_cc_flags = _to_flags_list(dbg_flags.cc),
+        dbg_cxx_flags = _to_flags_list(dbg_flags.cxx),
+        dbg_cxx_linker_shared = _to_flags_list(dbg_flags.cxx_linker_shared),
+        dbg_cxx_linker_static = _to_flags_list(dbg_flags.cxx_linker_static),
+        dbg_cxx_linker_executable = _to_flags_list(dbg_flags.cxx_linker_executable),
     )
 
     # for attr in dir(result):
@@ -76,6 +108,10 @@ def _vcpkg_cc_info_impl(ctx):
 vcpkg_cc_info = rule(
     implementation = _vcpkg_cc_info_impl,
     attrs = {
+        "is_macos": attr.bool(
+            doc = "Is running on Mac OS X",
+            default = False,
+        ),
         "_cc_opt_flags": attr.label(
             default = ":cc_flags",
             providers = [CxxFlagsInfo],

@@ -12,16 +12,13 @@ vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
     release = "2025.07.25",
     sha256 = "dff617c636a6519d4f083e658d404970c9da7d940a974e1d17f855f26a334e2f",
-    # verbose = True,
 )
-vcpkg.install(package = "boost-asio")
 vcpkg.install(package = "fmt")
-vcpkg.install(package = "openssl")
+vcpkg.install(package = "folly")
 vcpkg.configure(
     cpus = "HOST_CPUS/2",
     package = "openssl",
 )
-vcpkg.install(package = "folly")
 vcpkg.configure(
     cpus = "HOST_CPUS/2",
     package = "folly",
@@ -33,14 +30,6 @@ vcpkg.configure(
         "//hello_folly:folly_src.patch",
     ],
 )
-vcpkg.install(package = "duckdb")
-vcpkg.configure(
-    buildtree_fixups = [
-        "rm -rf ${BUILDTREE_DIR}/src/*.clean/data/csv/glob/crawl/.symbolic_link",
-    ],
-    cpus = "HOST_CPUS/2",
-    package = "duckdb",
-)
 use_repo(
     vcpkg,
     "vcpkg",
@@ -48,3 +37,15 @@ use_repo(
 )
 
 register_toolchains("@vcpkg_bootstrap//:vcpkg_toolchain")
+
+bazel_dep(name = "toolchains_llvm", version = "1.4.0")
+
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+llvm.toolchain(
+    name = "llvm_toolchain",
+    cxx_standard = {"": "c++23"},
+    llvm_version = "19.1.6",
+)
+use_repo(llvm, "llvm_toolchain")
+
+register_toolchains("@llvm_toolchain//:all")

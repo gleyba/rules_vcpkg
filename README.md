@@ -34,15 +34,19 @@ git_override(
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
-    release = "2025.04.09",
-    sha256 = "9a129eb4206157a03013dd87805406ef751a892170eddcaaf94a9b5db8a89b0f",
+    release = "2025.07.25",
+    sha256 = "dff617c636a6519d4f083e658d404970c9da7d940a974e1d17f855f26a334e2f",
 )
 
 vcpkg.install(package = "fmt")
-use_repo(vcpkg, "vcpkg")
-use_repo(vcpkg, "vcpkg_fmt")
 
-register_toolchains("@vcpkg//:vcpkg_toolchain")
+use_repo(
+    vcpkg,
+    "vcpkg",
+    "vcpkg_bootstrap",
+)
+
+register_toolchains("@vcpkg_bootstrap//:vcpkg_toolchain")
 ```
 
 Then, in `BUILD.bazel`:
@@ -51,7 +55,7 @@ Then, in `BUILD.bazel`:
 cc_binary(
     name = "hello_fmt",
     srcs = ["hello_fmt.cpp"],
-    deps = ["@vcpkg_fmt//:fmt"],
+    deps = ["@vcpkg//fmt"],
 )
 ```
 
@@ -94,8 +98,10 @@ Hello FMT!
 
 - Test more sophisticated packages with complex transitive dependencies structure:
     - [x] Add [FMT](https://github.com/fmtlib/fmt) example
+    - [x] Add [FMT](https://github.com/fmtlib/fmt) example with [toolchains_llvm](https://github.com/bazel-contrib/toolchains_llvm)
     - [x] Add [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio.html) example
     - [x] Add [Facebook Folly](https://github.com/facebook/folly) example
+    - [x] Add [Facebook Folly](https://github.com/facebook/folly) example with [toolchains_llvm](https://github.com/bazel-contrib/toolchains_llvm)
     - [x] Add [DuckDB](https://duckdb.org) example
     - [x] Add [QT](https://www.qt.io/) example
     - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
@@ -112,8 +118,6 @@ Hello FMT!
     - [x] automake
     - [x] libtoolize
     - [x] gsed
-    - [ ] zic (do we need it?)
-    - [ ] gettext (do we need it?)
 - Support other platforms besides Mac OS X aarh64: 
     - [ ] Compile everything for MacOS x86_64
     - [ ] Compile everything for Linux Arm64
@@ -128,6 +132,6 @@ Hello FMT!
     - [ ] Do more comprehensive cache hit/miss analysis
 - Support hermetic C/C++ Bazel toolchains by generating custom [Overlay Triplet](https://learn.microsoft.com/en-us/vcpkg/users/examples/overlay-triplets-linux-dynamic) with [VCPKG_CHAINLOAD_TOOLCHAIN_FILE](https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_chainload_toolchain_file):
     - [x] Overlay tripplet used as entry point to propagate custom configuration to VCPKG/Cmake
-    - [ ] Setup chainload file for c/c++ toolchain
+    - [x] Setup chainload file for c/c++ toolchain
 - [ ] Test with remote build execution
 - [ ] Announce this work in Bazel slack

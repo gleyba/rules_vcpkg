@@ -12,6 +12,14 @@ toolchain_type(
 )
 
 config_setting(
+    name = "macos",
+    constraint_values = [
+        "@platforms//os:osx",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "arm64_macos",
     constraint_values = [
         "@platforms//cpu:arm64",
@@ -45,6 +53,10 @@ config_setting(
 
 current_toolchain(
     name = "current",
+    is_macos = select({
+        ":macos": True,
+        "//conditions:default": False,
+    }),
     substitutions = select({
         ":arm64_macos": definitions.macos.arm64.substitutions,
         ":amd64_macos": definitions.macos.amd64.substitutions,

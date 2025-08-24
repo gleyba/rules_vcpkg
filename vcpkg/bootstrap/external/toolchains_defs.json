@@ -29,17 +29,14 @@
                 "target": "/usr/bin/codesign",
                 "link_name": "bin/codesign" 
             }, { 
+                "target": "/usr/bin/ar",
+                "link_name": "bin/ar" 
+            }, { 
                 "target": "/usr/bin/ranlib",
                 "link_name": "bin/ranlib" 
             }, { 
                 "target": "/usr/bin/lipo",
                 "link_name": "bin/lipo" 
-            }, { 
-                "target": "/usr/bin/clang",
-                "link_name": "bin/clang" 
-            }, { 
-                "target": "/usr/bin/clang++",
-                "link_name": "bin/clang++"
             }, { 
                 "target": "/usr/bin/vm_stat", 
                 "link_name": "bin/vm_stat"
@@ -87,26 +84,11 @@
     "linux": {
         "symlink": [
             { 
-                "target": "/usr/bin/gcc",
-                "link_name": "bin/gcc" 
-            }, { 
-                "target": "/usr/bin/g++",
-                "link_name": "bin/g++"
-            }, { 
-                "target": "/usr/bin/cc",
-                "link_name": "bin/cc" 
-            }, { 
-                "target": "/usr/bin/cpp",
-                "link_name": "bin/cpp"
-            }, { 
                 "target": "/usr/bin/as",
                 "link_name": "bin/as"
             }, { 
                 "target": "/usr/bin/ld",
                 "link_name": "bin/ld"
-            }, { 
-                "target": "/usr/bin/ar",
-                "link_name": "bin/ar" 
             }
         ]
     },
@@ -136,18 +118,6 @@
                 "sha256": "b2b2f956963ef6300841c253a7aa81c3e9e5dbd2ed059bee6f8bcd851b5bb096",
                 "output": "bin"
             }
-        ],
-        "symlink": [
-            { 
-                "target": "/usr/bin/aarch64-linux-gnu-gcc",
-                "link_name": "bin/aarch64-linux-gnu-gcc" 
-            }, { 
-                "target": "/usr/bin/aarch64-linux-gnu-g++",
-                "link_name": "bin/aarch64-linux-gnu-g++"
-            }, { 
-                "target": "/usr/bin/aarch64-linux-gnu-as",
-                "link_name": "bin/aarch64-linux-gnu-as"
-            }
         ]
     },
     "linux_amd64": {
@@ -175,18 +145,6 @@
                 "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-linux.zip",
                 "sha256": "46aa8ad0a431e9b6e39f6ca0abc47bf8b13be094e3ac7d0f6d39e94bbdc746f9",
                 "output": "bin"
-            }
-        ],
-        "symlink": [
-            { 
-                "target": "/usr/bin/x86_64-linux-gnu-gcc",
-                "link_name": "bin/x86_64-linux-gnu-gcc" 
-            }, { 
-                "target": "/usr/bin/x86_64-linux-gnu-g++",
-                "link_name": "bin/x86_64-linux-gnu-g++"
-            }, { 
-                "target": "/usr/bin/x86_64-linux-gnu-as",
-                "link_name": "bin/x86_64-linux-gnu-as"
             }
         ]
     },

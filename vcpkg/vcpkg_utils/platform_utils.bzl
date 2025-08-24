@@ -110,6 +110,7 @@ platform_defs = struct(
 def _to_substitutions(os, arch):
     return {
         "%%SYSTEM_NAME_SHORT%%": os.short_name,
+        "%%SYSTEM_NAME_SHORT_UPPER%%": os.short_name.upper(),
         "%%SYSTEM_NAME_LONG%%": os.long_name,
         "%%ARCH_SHORT%%": arch.short_name,
         "%%ARCH_LONG%%": arch.long_name,

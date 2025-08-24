@@ -3,12 +3,10 @@
 set -eu
 
 export HOME=/tmp/home
-export PATH="${PWD}/__bin_dir__" #  ":${PWD}/__cur_bin_dir__:/usr/bin:/bin"
+export PATH="${PWD}/__bin_dir__"
 export M4="${PWD}/__bin_dir__/m4"
 
 export VCPKG_EXEC_ROOT="${PWD}"
-# export CC="__cxx_compiler__"
-# export CXX="__cxx_compiler__"
 
 export VCPKG_OVERLAY_TRIPLETS="${VCPKG_EXEC_ROOT}/__overlay_tripplets__"
 export VCPKG_ROOT="${VCPKG_EXEC_ROOT}/__vcpkg_root__"

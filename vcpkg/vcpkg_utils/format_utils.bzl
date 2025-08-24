@@ -86,3 +86,29 @@ def format_inner_dict_with_value_lists(deps, pattern = "\"{dep}\"", indent = 1):
         pattern = "{dep}",
         indent = indent,
     )
+
+def format_additions(lists, sets):
+    """Format CMAKE-style definitions
+
+    Args:
+        lists: list type variable to append values to
+        sets: variables to assign value to
+
+    Returns:
+        composed dictionary for template substitution
+    """
+    result = []
+    if lists:
+        for k, values in lists.items():
+            result += [
+                "string(APPEND %s \" %s\")" % (k, v)
+                for v in values
+            ] + [""]
+
+    if sets:
+        result += [
+            "set(%s %s)" % item
+            for item in sets.items()
+        ] + [""]
+
+    return {"%%ADDITIONS%%": "\n".join(result)}

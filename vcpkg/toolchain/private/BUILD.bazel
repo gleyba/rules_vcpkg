@@ -4,5 +4,9 @@ cc_flags(name = "cc_flags")
 
 vcpkg_cc_info(
     name = "vcpkg_cc_info",
+    is_macos = select({
+        "//vcpkg/toolchain:macos": True,
+        "//conditions:default": False,
+    }),
     visibility = ["//visibility:public"],
 )
