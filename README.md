@@ -119,11 +119,11 @@ Hello FMT!
     - [x] libtoolize
     - [x] gsed
 - Support other platforms besides Mac OS X aarh64: 
-    - [ ] Compile everything for MacOS x86_64
-    - [ ] Compile everything for Linux Arm64
-    - [ ] Compile everything for Linux x86_64
+    - [x] Compile everything for MacOS x86_64
+    - [x] Compile everything for Linux Arm64
+    - [x] Compile everything for Linux x86_64
 - Setup CI checks:
-    - [ ] Release `rules_vcpkg_externals` artifacts to github packages
+    - [x] Release `rules_vcpkg_externals` artifacts to github packages
     - [ ] Setup simple build examples CI checks
 - Hermeticity and reproducibility:
     - [x] Some work done and packages build are mostly cacheable from disk cache

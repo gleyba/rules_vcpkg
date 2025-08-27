@@ -17,6 +17,11 @@ int main(int argc, char ** argv) {
 
         fs::path link_destination = fs::read_symlink(entry_path);
         if (link_destination.is_relative()) {
+            fs::remove(entry_path);
+            fs::create_hard_link(
+                entry_path.parent_path() / link_destination,
+                dir_entry
+            );
             continue;
         }
 
