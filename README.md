@@ -104,7 +104,7 @@ Hello FMT!
     - [x] Add [Facebook Folly](https://github.com/facebook/folly) example with [toolchains_llvm](https://github.com/bazel-contrib/toolchains_llvm)
     - [x] Add [DuckDB](https://duckdb.org) example
     - [x] Add [QT](https://www.qt.io/) example
-    - [ ] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
+    - [x] Add [AWS C++ SDK](https://github.com/aws/aws-sdk-cpp) example
     - [ ] Add [Google Cloud Cpp](https://github.com/googleapis/google-cloud-cpp) example
     - [ ] Add [Azure SDK for Cpp](https://github.com/Azure/azure-sdk-for-cpp/tree/main) example
 - Prepare additional toolchains done via [rules_vcpkg_externals](https://github.com/gleyba/rules_vcpkg_externals):
@@ -134,4 +134,4 @@ Hello FMT!
     - [x] Overlay tripplet used as entry point to propagate custom configuration to VCPKG/Cmake
     - [x] Setup chainload file for c/c++ toolchain
 - [ ] Test with remote build execution
-- [ ] Announce this work in Bazel slack
+- [x] Announce this work in Bazel slack

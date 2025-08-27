@@ -21,7 +21,7 @@ prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 : "${VCPKG_DEBUG:=0}"
 : "${VCPKG_DEBUG_REUSE_OUTPUTS:=0}"
 
-if [["${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1]]; then
+if [[ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]]; then
   unset VCPKG_MAX_CONCURRENCY
 fi
 

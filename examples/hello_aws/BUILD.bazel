@@ -1,0 +1,7 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "hello_aws",
+    srcs = ["hello_aws.cpp"],
+    deps = ["@vcpkg//aws-sdk-cpp"],
+)
