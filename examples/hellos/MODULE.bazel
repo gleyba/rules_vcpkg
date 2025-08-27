@@ -23,7 +23,7 @@ vcpkg.configure(
 )
 vcpkg.install(package = "folly")
 vcpkg.configure(
-    cpus = "HOST_CPUS/2",
+    cpus = "HOST_CPUS",
     package = "folly",
 )
 vcpkg.configure(
@@ -38,7 +38,7 @@ vcpkg.configure(
     buildtree_fixups = [
         "rm -rf ${BUILDTREE_DIR}/src/*.clean/data/csv/glob/crawl/.symbolic_link",
     ],
-    cpus = "HOST_CPUS/2",
+    cpus = "HOST_CPUS",
     package = "duckdb",
 )
 use_repo(

@@ -20,7 +20,7 @@ vcpkg.configure(
     package = "openssl",
 )
 vcpkg.configure(
-    cpus = "HOST_CPUS/2",
+    cpus = "HOST_CPUS",
     package = "folly",
 )
 vcpkg.configure(

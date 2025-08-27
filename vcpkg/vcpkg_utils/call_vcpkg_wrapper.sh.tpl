@@ -21,8 +21,11 @@ prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 : "${VCPKG_DEBUG:=0}"
 : "${VCPKG_DEBUG_REUSE_OUTPUTS:=0}"
 
-if [[ "${VCPKG_DEBUG}" == 1 ]]; then
+if [["${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1]]; then
   unset VCPKG_MAX_CONCURRENCY
+fi
+
+if [[ "${VCPKG_DEBUG}" == 1 ]]; then
   buildtrees_tmp="/tmp/vcpkg/builtrees/__package_name__"
   if [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 0 ] && [ "${VCPKG_DEBUG_REUSE_SOURCES}" == 0 ]; then 
     rm -rf "${buildtrees_tmp}"

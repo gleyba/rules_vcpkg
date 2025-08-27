@@ -59,6 +59,40 @@
                 "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-aarch64-apple-darwin-install_only_stripped.tar.gz",
                 "sha256": "7b32a1368af181ef16b2739f65849bb74d4ef1f324613ad9022d6f6fe3bb25f0",
                 "strip_prefix": "python"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf.macos.arm64.zip",
+                "sha256": "e38aa614cf1396d35ab54c1ad185849eb45344b2fe6b6cc47da5fd44fc824ed3",
+                "strip_prefix": "autoconf"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/automake.macos.arm64.zip",
+                "sha256": "752811456a01535539b02b987c384b1464c5cd2a80600944e806075a7d7d0173",
+                "strip_prefix": "automake"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/libtool.macos.arm64.zip",
+                "sha256": "8bbe93d3a1b2f94da53a541e644a98849f3c84d94c548caae99fed63bd5be1d3",
+                "strip_prefix": "libtool"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.macos.arm64.zip",
+                "sha256": "8f5f64798d0543adadcc6ebef5538752345d9c030d9985eeda0d71dc7a373ae1",
+                "strip_prefix": "pkgconfig"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/m4.macos.arm64.zip",
+                "sha256": "466779e5a0983d73f65ba659a14666cb304478c360186577fa2ce5a264e955b8"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/bison.macos.arm64.zip",
+                "sha256": "662bc9fc9238b786f60b6bca566c66306af4222212a312ed0b68fc1187bd233e"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/flex.macos.arm64.zip",
+                "sha256": "7942c2163c43976befd2c59780a723139af289b3bda0806ba9fd1c1bdf8491b2"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/make.macos.arm64.zip",
+                "sha256": "a2b38bb26fff8853335b5f8ed4ad96a1064729ebe5d7c70199d3a3208d657cbc"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/gsed.macos.arm64.zip",
+                "sha256": "c30d8905761555a6b526336e3b4ebef637ae8a3bd508536c417bf41fe34930b6"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf_archive.macos.arm64.zip",
+                "sha256": "b74f910de9fbde168bc7dc1991159a666646783bf8312d7a0c06f72fbb6e02ff"
             }
         ]
     },
@@ -78,6 +112,40 @@
                 "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20250702/cpython-3.11.13+20250702-x86_64-apple-darwin-install_only_stripped.tar.gz",
                 "sha256": "7e9a250b61d7c5795dfe564f12869bef52898612220dfda462da88cdcf20031c",
                 "strip_prefix": "python"
+            },  { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf.macos.amd64.zip",
+                "sha256": "2211bfec2a53b9e08752e79222942bfd75962e2dfa3b6e71752c7de22aaf9d15",
+                "strip_prefix": "autoconf"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/automake.macos.amd64.zip",
+                "sha256": "752811456a01535539b02b987c384b1464c5cd2a80600944e806075a7d7d0173",
+                "strip_prefix": "automake"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/libtool.macos.amd64.zip",
+                "sha256": "d319e183ed80bba2031a5601d9ea1cd60487d3b640dfe08fcde59001da79194e",
+                "strip_prefix": "libtool"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.macos.amd64.zip",
+                "sha256": "39795e4c59334145a1685a065d383cb48ad3fe478e76593952216fd3bb0ff7e1",
+                "strip_prefix": "pkgconfig"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/m4.macos.amd64.zip",
+                "sha256": "52726bd2fa545c9084458b69e8f54cd4e327903efe22b6cafec15131bdccd2cc"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/bison.macos.amd64.zip",
+                "sha256": "02b39316e80d29c0509ced4bcd713db4426f71ae028a11f67983d1c74d9c92de"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/flex.macos.amd64.zip",
+                "sha256": "8c3225f547556b8d3349501b1d1382b2deaf07576eb3e463873cd616c3d45db7"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/make.macos.amd64.zip",
+                "sha256": "1cf78931061a76c942d3743fe915337ad161f4e081e8d131e53bfb246e9e5853"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/gsed.macos.amd64.zip",
+                "sha256": "b20765124a6b087966c1bae62e529ed8f4cd7583950da19d0e0dd78ac461cb38"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.macos.amd64.zip",
+                "sha256": "39795e4c59334145a1685a065d383cb48ad3fe478e76593952216fd3bb0ff7e1"
             }
         ]
     },
@@ -117,6 +185,40 @@
                 "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-linux-aarch64.zip",
                 "sha256": "b2b2f956963ef6300841c253a7aa81c3e9e5dbd2ed059bee6f8bcd851b5bb096",
                 "output": "bin"
+            },  { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf.linux.arm64.zip",
+                "sha256": "7f0398b4eed174ca67e9c3f352455947b42614e99ca59264af9c93a2a164495a",
+                "strip_prefix": "autoconf"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/automake.linux.arm64.zip",
+                "sha256": "10fc50712a1bbc67a97fe9e336fbee3f54a255628453c6bb628b12e105caf2e7",
+                "strip_prefix": "automake"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/libtool.linux.arm64.zip",
+                "sha256": "735424bb62ff1b6891b640feee3acd2021d0d36f9b27d65f02ab386f7385e6ca",
+                "strip_prefix": "libtool"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.linux.arm64.zip",
+                "sha256": "c8ddfe21e9959ab7a4183e9bc892c546abdf02ce24920280916d4eff35cc8fd5",
+                "strip_prefix": "pkgconfig"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/m4.linux.arm64.zip",
+                "sha256": "f859bbc60c154cd42c003ec138f441da954b9301927beddd40237eceb2494604"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/bison.linux.arm64.zip",
+                "sha256": "64bd7f230b8c449dcbd3963ed7ba4ce359f9aee870cb9f20473c74974f035bc5"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/flex.linux.arm64.zip",
+                "sha256": "f24e31d0443f6b43cfe04a404b9fb89beb79f2918a21ed02862202f57bec6d8c"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/make.linux.arm64.zip",
+                "sha256": "aaffe555e1e48a394620fd00682a47aa68cabde52227f134760dec2b394bb27e"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/gsed.linux.arm64.zip",
+                "sha256": "3226591d92ce5a567b79fa0c770e4b3128ecc92c7c0a05f890365a3fd33d6a02"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.linux.arm64.zip",
+                "sha256": "c8ddfe21e9959ab7a4183e9bc892c546abdf02ce24920280916d4eff35cc8fd5"
             }
         ]
     },
@@ -145,31 +247,44 @@
                 "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-linux.zip",
                 "sha256": "46aa8ad0a431e9b6e39f6ca0abc47bf8b13be094e3ac7d0f6d39e94bbdc746f9",
                 "output": "bin"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf.linux.amd64.zip",
+                "sha256": "093f3702cbbf2ffb763ecb437ba7cfbc7c57cd97b1004b749f192e5e75ff8ae5",
+                "strip_prefix": "autoconf"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/automake.linux.amd64.zip",
+                "sha256": "10fc50712a1bbc67a97fe9e336fbee3f54a255628453c6bb628b12e105caf2e7",
+                "strip_prefix": "automake"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/libtool.linux.amd64.zip",
+                "sha256": "7de722a929ccd9fc4bc7f5e6e78971603d127527491f9d103ad45869a141bb62",
+                "strip_prefix": "libtool"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.linux.amd64.zip",
+                "sha256": "48b3357ad94a3c5bcf36e4a860d73953315077a7a3954ee5ca1eb82743aa2781",
+                "strip_prefix": "pkgconfig"
+            }, { 
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/m4.linux.amd64.zip",
+                "sha256": "11b72ee257fcf7b351c2aa77e35ee2b1c103a0e110aeceb0f61cd61726c5565b"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/bison.linux.amd64.zip",
+                "sha256": "0dfbd08d419396b5e3247f307e22e114a2ef394ed856d29aed0a48f40295130b"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/flex.linux.amd64.zip",
+                "sha256": "31b20690542c160f046d6e3f61fbcc3533f84b423f7e0dc28b5d7b1109da906b"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/make.linux.amd64.zip",
+                "sha256": "14adb478a72fdcb219f715fbc81e090080b24a50de89b16efb2bdfb0ed4de250"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/gsed.linux.amd64.zip",
+                "sha256": "7de722a929ccd9fc4bc7f5e6e78971603d127527491f9d103ad45869a141bb62"
+            }, {
+                "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf_archive.linux.amd64.zip",
+                "sha256": "b74f910de9fbde168bc7dc1991159a666646783bf8312d7a0c06f72fbb6e02ff"
             }
         ]
     },
     "_": {
-        "extract": [
-            { 
-                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/autoconf.zip",
-                "strip_prefix": "autoconf"
-            }, { 
-                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/automake.zip",
-                "strip_prefix": "automake"
-            }, { 
-                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/libtool.zip",
-                "strip_prefix": "libtool"
-            }, { 
-                "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/pkgconfig.zip",
-                "strip_prefix": "pkgconfig"
-            },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/m4.zip" },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/bison.zip" },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/flex.zip" },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/make.zip" },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/gsed.zip" },
-            { "archive": "//vcpkg/bootstrap/archives:{os}/{arch}/autoconf_archive.zip" }
-        ],
         "symlink": [
             { 
                 "target": "/bin/bash", 
