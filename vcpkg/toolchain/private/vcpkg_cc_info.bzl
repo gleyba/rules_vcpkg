@@ -101,11 +101,11 @@ def _vcpkg_cc_info_impl(ctx):
     )
 
     # Do not propagate '-shared' flag, underlying VCPKG machinery can decide by itself if to do this
-    opt_linker_flags_shared = opt_cxx_linker_shared.difference(linker_flags, opt_flags.cxx_linker_executable, ["-shared"])
-    opt_linker_flags_exe = opt_cxx_linker_executable.difference(linker_flags, opt_cxx_linker_shared, ["-shared"])
+    opt_linker_flags_shared = opt_cxx_linker_shared.difference(["-shared"])
+    opt_linker_flags_exe = opt_cxx_linker_executable.difference(["-shared"])
 
-    dbg_linker_flags_shared = dbg_cxx_linker_shared.difference(linker_flags, dbg_flags.cxx_linker_executable, ["-shared"])
-    dbg_linker_flags_exe = dbg_cxx_linker_executable.difference(linker_flags, dbg_cxx_linker_shared, ["-shared"])
+    dbg_linker_flags_shared = dbg_cxx_linker_shared.difference(["-shared"])
+    dbg_linker_flags_exe = dbg_cxx_linker_executable.difference(["-shared"])
 
     cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
 

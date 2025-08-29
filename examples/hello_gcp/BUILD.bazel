@@ -1,0 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "hello_gcp",
+    srcs = ["hello_gcp.cpp"],
+    linkopts = select({
+        "@platforms//os:macos": [
+            "-framework Foundation",
+            "-framework SystemConfiguration",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "@vcpkg//curl",
+        "@vcpkg//google-cloud-cpp",
+    ],
+)
