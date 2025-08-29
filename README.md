@@ -1,6 +1,6 @@
 # VCPKG rules for Bazel
 
-This is a very draft of how [vcpkg](https://vcpkg.io/en/) dependency manager can be integrated to [Bazel](https://bazel.build/) build system.
+This is a pre-alpha state of how [vcpkg](https://vcpkg.io/en/) dependency manager can be integrated to [Bazel](https://bazel.build/) build system.
 
 Vcpkg is the well curated list of C/C++ libraries with predefined configurations to build from source.
 It is easy to integrate if you use Cmake, but Bazel is a separate story.
@@ -22,10 +22,9 @@ Which is done by bunch of hacks as a proof-of-concept.
 ## Getting started
 
 There is `examples` directory, which I'm going to extend.
-But to try yourself this early draft, add to `MODULE.bazel`:
+But to try yourself this not yet polished version, add to `MODULE.bazel`:
 
 ```
-bazel_dep("rules_vcpkg", version = "over 9000")
 git_override(
     module_name = "rules_vcpkg", 
     remote = "https://github.com/gleyba/rules_vcpkg",
