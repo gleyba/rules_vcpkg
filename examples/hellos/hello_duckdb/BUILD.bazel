@@ -4,4 +4,5 @@ cc_binary(
     name = "hello_duckdb",
     srcs = ["hello_duckdb.cpp"],
     deps = ["@vcpkg//duckdb"],
+    copts = ["-std=c++20"],
 )

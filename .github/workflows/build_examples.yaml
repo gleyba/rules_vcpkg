@@ -16,7 +16,7 @@ jobs:
       with:
         apt: lld
     - name: Build Examples
-      run: cd examples/hellos && bazel build //...
+      run: cd examples/hellos && bazel build //... --config=buildbuddy --remote_header=x-buildbuddy-api-key=${{ secrets.BUILDBUDDY_KEY }}
 
   build_examples_with_llvm_toolchain:
     runs-on: ${{ matrix.os }}
@@ -30,4 +30,4 @@ jobs:
       with:
         apt: lld
     - name: Build Examples
-      run: cd examples/with_llvm_toolchains && bazel build //...
+      run: cd examples/with_llvm_toolchains && bazel build //... --config=buildbuddy --remote_header=x-buildbuddy-api-key=${{ secrets.BUILDBUDDY_KEY }}
