@@ -1,4 +1,4 @@
-module(name = "vcpkg_hellos")
+module(name = "vcpkg_hellos_with_toolchains_llvm")
 
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.4")
@@ -10,15 +10,17 @@ local_path_override(
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
 vcpkg.bootstrap(
-    release = "2025.07.25",
-    sha256 = "dff617c636a6519d4f083e658d404970c9da7d940a974e1d17f855f26a334e2f",
+    release = "2025.08.27",
+    sha256 = "b7ca5a754e4fbaa0f1d36c5f19ceef4ed47c65312fed298bb3dcf73c276dbe9b",
 )
+vcpkg.install(package = "boost-asio")
 vcpkg.install(package = "fmt")
-vcpkg.install(package = "folly")
+vcpkg.install(package = "openssl")
 vcpkg.configure(
     cpus = "HOST_CPUS/2",
     package = "openssl",
 )
+vcpkg.install(package = "folly")
 vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "folly",
@@ -30,6 +32,46 @@ vcpkg.configure(
         "//hello_folly:folly_src.patch",
     ],
 )
+vcpkg.install(package = "duckdb")
+vcpkg.configure(
+    buildtree_fixups = [
+        "rm -rf ${BUILDTREE_DIR}/src/*.clean/data/csv/glob/crawl/.symbolic_link",
+    ],
+    cpus = "HOST_CPUS",
+    package = "duckdb",
+)
+vcpkg.install(package = "azure-storage-files-datalake-cpp")
+vcpkg.configure(
+    cpus = "HOST_CPUS/2",
+    package = "libiconv",
+)
+vcpkg.install(package = "aws-sdk-cpp")
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "aws-sdk-cpp",
+)
+vcpkg.install(package = "google-cloud-cpp")
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "openssl",
+)
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "abseil",
+)
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "protobuf",
+)
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "grpc",
+)
+vcpkg.configure(
+    cpus = "HOST_CPUS",
+    package = "google-cloud-cpp",
+)
+
 use_repo(
     vcpkg,
     "vcpkg",

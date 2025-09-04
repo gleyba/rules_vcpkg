@@ -123,7 +123,7 @@ Hello FMT!
     - [x] Compile everything for Linux x86_64
 - Setup CI checks:
     - [x] Release `rules_vcpkg_externals` artifacts to github packages
-    - [ ] Setup simple build examples CI checks
+    - [x] Setup simple build examples CI checks
 - Hermeticity and reproducibility:
     - [x] Some work done and packages build are mostly cacheable from disk cache
     - [x] Use of [VCPKG assetcaching](https://learn.microsoft.com/en-us/vcpkg/users/assetcaching?WT.mc_id=vcpkg_inproduct_cli) to integrate packages downloads with Bazel downloader
