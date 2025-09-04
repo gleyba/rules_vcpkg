@@ -290,7 +290,7 @@ def download_deps(rctx, bootstrap_ctx, depend_info):
 
     errors = _try_download_something(rctx, bootstrap_ctx, depend_info)
     if bootstrap_ctx.verbose:
-        print(L.warn(*errors))
+        L.warn(*errors)
 
     downloads, err = _run_install_loop(rctx, bootstrap_ctx)
     if err:

@@ -1,4 +1,5 @@
-load("//vcpkg/toolchain/private:default_defs.bzl", "DEFAULT_TRIPLET_SETS")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@cc_toolchain_util.bzl", "get_tools_info")
 load("//vcpkg/toolchain/private:vcpkg_cc_info.bzl", "VcpkgCCInfo")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_additions")
 
@@ -9,8 +10,16 @@ VcpgCurrentInfo = provider(
         "transitive",
         "triplet",
         "overlay_triplets",
+        "cc_compiler",
+        "cxx_compiler",
     ],
 )
+
+def _resolve_tool_path(tool_path):
+    if paths.is_absolute(tool_path):
+        return tool_path
+    else:
+        return "${VCPKG_EXEC_ROOT}/%s" % tool_path
 
 def _current_toolchain_impl(ctx):
     additional_sets = {}
@@ -32,36 +41,48 @@ def _current_toolchain_impl(ctx):
     additional_sets["VCPKG_CHAINLOAD_TOOLCHAIN_FILE"] = "\"$ENV{VCPKG_EXEC_ROOT}/%s\"" % toolchain_cmake.path
 
     vcpkg_cc_info = ctx.attr._vcpkg_cc_info[VcpkgCCInfo]
-    cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
 
-    transitive_depsets.append(cc_toolchain.cc.all_files)
+    transitive_depsets.append(ctx.toolchains["@rules_cc//cc:toolchain_type"].cc.all_files)
+
+    flags_substitutions = {
+        "%%C_COMPILER%%": vcpkg_cc_info.cc,
+        "%%CXX_COMPILER%%": vcpkg_cc_info.cxx,
+        "%%AR%%": vcpkg_cc_info.ar,
+        "%%C_FLAGS%%": vcpkg_cc_info.cc_flags,
+        "%%CXX_FLAGS%%": vcpkg_cc_info.cxx_flags,
+        "%%LINKER_FLAGS%%": vcpkg_cc_info.linker_flags,
+        "%%C_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cc_flags,
+        "%%CXX_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_flags,
+        "%%C_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cc_flags,
+        "%%CXX_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_flags,
+        "%%LINKER_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_linker_shared,
+        "%%EXE_LINKER_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_linker_executable,
+        "%%LINKER_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_linker_shared,
+        "%%EXE_LINKER_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_linker_executable,
+    }
+
+    vcpkg_info = ctx.toolchains["@rules_vcpkg//vcpkg/toolchain:toolchain_type"].vcpkg_info
 
     ctx.actions.expand_template(
         template = ctx.file.triplet_template,
         output = triplet_cmake,
-        substitutions = ctx.attr.substitutions | format_additions({}, DEFAULT_TRIPLET_SETS | additional_sets),
+        substitutions = (
+            ctx.attr.substitutions |
+            flags_substitutions |
+            format_additions({}, vcpkg_info.config_settings | additional_sets)
+        ),
     )
 
     ctx.actions.expand_template(
         template = ctx.file.toolchain_template,
         output = toolchain_cmake,
-        substitutions = ctx.attr.substitutions | {
-            "%%C_COMPILER%%": vcpkg_cc_info.cc,
-            "%%CXX_COMPILER%%": vcpkg_cc_info.cxx,
-            "%%AR%%": vcpkg_cc_info.ar,
-            "%%C_FLAGS%%": vcpkg_cc_info.cc_flags,
-            "%%CXX_FLAGS%%": vcpkg_cc_info.cxx_flags,
-            "%%LINKER_FLAGS%%": vcpkg_cc_info.linker_flags,
-            "%%C_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cc_flags,
-            "%%CXX_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_flags,
-            "%%C_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cc_flags,
-            "%%CXX_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_flags,
-            "%%LINKER_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_linker_shared,
-            "%%EXE_LINKER_FLAGS_DEBUG%%": vcpkg_cc_info.dbg_cxx_linker_executable,
-            "%%LINKER_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_linker_shared,
-            "%%EXE_LINKER_FLAGS_RELEASE%%": vcpkg_cc_info.opt_cxx_linker_executable,
-        },
+        substitutions = (
+            ctx.attr.substitutions |
+            flags_substitutions
+        ),
     )
+
+    tools_info = get_tools_info(ctx)
 
     return [
         DefaultInfo(files = depset(binaries + [
@@ -77,6 +98,8 @@ def _current_toolchain_impl(ctx):
                     triplet_cmake,
                     toolchain_cmake,
                 ]),
+                cc_compiler = _resolve_tool_path(tools_info.cc),
+                cxx_compiler = _resolve_tool_path(tools_info.cxx),
             ),
         ),
     ]
@@ -110,8 +133,10 @@ current_toolchain = rule(
             default = "//vcpkg/toolchain/private:vcpkg_cc_info",
         ),
     },
+    fragments = ["cpp"],
     toolchains = [
         "@rules_cc//cc:toolchain_type",
+        "@rules_vcpkg//vcpkg/toolchain:toolchain_type",
         config_common.toolchain_type(
             "//vcpkg/bootstrap/macos:sdk_toolchain_type",
             mandatory = False,

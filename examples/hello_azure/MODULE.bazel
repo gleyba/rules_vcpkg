@@ -1,0 +1,31 @@
+module(name = "vcpkg_hellos")
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.1.4")
+bazel_dep(name = "rules_vcpkg", version = "0.0.0")
+local_path_override(
+    module_name = "rules_vcpkg",
+    path = "../..",
+)
+
+vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")
+vcpkg.bootstrap(
+    release = "2025.08.27",
+    sha256 = "b7ca5a754e4fbaa0f1d36c5f19ceef4ed47c65312fed298bb3dcf73c276dbe9b",
+)
+vcpkg.install(package = "azure-storage-files-datalake-cpp")
+vcpkg.configure(
+    cpus = "HOST_CPUS/2",
+    package = "openssl",
+)
+vcpkg.configure(
+    cpus = "HOST_CPUS/2",
+    package = "libiconv",
+)
+use_repo(
+    vcpkg,
+    "vcpkg",
+    "vcpkg_bootstrap",
+)
+
+register_toolchains("@vcpkg_bootstrap//:vcpkg_toolchain")

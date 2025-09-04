@@ -5,6 +5,7 @@ VcpgInfo = provider(
         "vcpkg_manifest",
         "vcpkg_files",
         "bin_dir",
+        "config_settings",
     ],
 )
 
@@ -16,6 +17,7 @@ def _vcpkg_toolchain_impl(ctx):
             vcpkg_files = DefaultInfo(
                 files = depset(ctx.files.vcpkg_files),
             ),
+            config_settings = ctx.attr.config_settings,
         ),
     )
 
@@ -31,5 +33,9 @@ vcpkg_toolchain = rule(
             doc = "Path to the vcpkg manifest",
         ),
         "vcpkg_files": attr.label_list(allow_files = True),
+        "config_settings": attr.string_dict(
+            doc = "Vcpkg triplet configuration settings",
+            mandatory = True,
+        ),
     },
 )

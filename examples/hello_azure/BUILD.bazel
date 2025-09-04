@@ -1,0 +1,16 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "hello_azure",
+    srcs = ["hello_azure.cpp"],
+    linkopts = select({
+        "@platforms//os:macos": [
+            "-framework Foundation",
+            "-framework SystemConfiguration",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "@vcpkg//azure-storage-files-datalake-cpp",
+    ],
+)

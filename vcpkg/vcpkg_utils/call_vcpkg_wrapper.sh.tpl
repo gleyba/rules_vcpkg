@@ -15,6 +15,9 @@ export VCPKG_EXEC_ROOT="${PWD}"
 export VCPKG_OVERLAY_TRIPLETS="${VCPKG_EXEC_ROOT}/__overlay_tripplets__"
 export VCPKG_ROOT="${VCPKG_EXEC_ROOT}/__vcpkg_root__"
 
+export CC=__cc_compiler__
+export CXX=__cxx_compiler__
+
 vcpkg_bin="${PWD}/__vcpkg_bin__"
 prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 

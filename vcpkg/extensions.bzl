@@ -2,6 +2,7 @@ load("//vcpkg/bootstrap:bootstrap.bzl", "bootstrap")
 load("//vcpkg/bootstrap:bootstrap_toolchains.bzl", "bootstrap_toolchains")
 load("//vcpkg/bootstrap:declare.bzl", "declare")
 load("//vcpkg/bootstrap/external:cc_toolchain_util.bzl", "cc_toolchain_util")
+load("//vcpkg/bootstrap/private:default_defs.bzl", "DEAULT_VCPKG_DISTRO_FIXUP_REPLACE", "DEFAULT_CONFIG_SETTINGS")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
@@ -10,6 +11,14 @@ _bootstrap = tag_class(attrs = {
     "commit": attr.string(doc = "The vcpkg commit, either this or version must be specified"),
     "sha256": attr.string(doc = "Shasum of vcpkg"),
     "verbose": attr.bool(doc = "If to print debug info", default = False),
+    "config_settings": attr.string_dict(
+        doc = "Vcpkg triplet configuration settings",
+        default = DEFAULT_CONFIG_SETTINGS,
+    ),
+    "vcpkg_distro_fixup_replace": attr.string_list_dict(
+        doc = "Key is file path and value - list of sequential pairs of values, pattern to search and relace to",
+        default = DEAULT_VCPKG_DISTRO_FIXUP_REPLACE,
+    ),
 })
 
 _install = tag_class(attrs = {
@@ -131,6 +140,8 @@ def _vcpkg(mctx):
         packages_src_patches = packages_src_patches,
         external_bins = "@vcpkg_external//bin",
         verbose = cur_bootstrap.verbose,
+        config_settings = cur_bootstrap.config_settings,
+        vcpkg_distro_fixup_replace = cur_bootstrap.vcpkg_distro_fixup_replace,
     )
 
     declare(

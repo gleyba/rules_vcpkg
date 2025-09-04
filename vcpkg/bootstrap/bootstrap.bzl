@@ -3,9 +3,9 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//vcpkg/bootstrap/utils:collect_depend_info.bzl", "collect_depend_info")
 load("//vcpkg/bootstrap/utils:download_deps.bzl", "download_deps")
 load("//vcpkg/bootstrap/utils:vcpkg_exec.bzl", "exec_check")
-load("//vcpkg/toolchain/private:default_defs.bzl", "DEFAULT_TRIPLET_SETS")
-load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_additions", "format_inner_list")
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_additions", "format_inner_dict", "format_inner_list")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
+load("//vcpkg/vcpkg_utils:logging.bzl", "L")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 def _download_vcpkg_tool(rctx, bootstrap_ctx):
@@ -57,7 +57,7 @@ def _initialize(rctx, bootstrap_ctx):
         bootstrap_ctx.pu.triplet_template,
         substitutions = bootstrap_ctx.pu.definitions.substitutions | format_additions(
             {},
-            DEFAULT_TRIPLET_SETS,
+            bootstrap_ctx.config_settings,
         ),
     )
 
@@ -75,8 +75,26 @@ def _initialize(rctx, bootstrap_ctx):
         )
         rctx.watch(patch_file)
 
+def _list_to_pairs(items):
+    return [
+        (items[i], items[i + 1])
+        for i in range(0, len(items), 2)
+    ]
+
 def _perform_install_fixups(rctx, bootstrap_ctx):
     rctx.report_progress("Initializing VCPKG and pactching ports")
+
+    for file, replaces in bootstrap_ctx.vcpkg_distro_fixup_replace.items():
+        to_check_path = rctx.path("%s/vcpkg/%s" % (bootstrap_ctx.output, file))
+        if not to_check_path.exists:
+            L.warn("Can't find '%s' file in VCPKG distro" % file)
+
+        data = rctx.read(to_check_path)
+        for pattern, replace in _list_to_pairs(replaces):
+            data = data.replace(pattern, replace)
+
+        rctx.delete(to_check_path)
+        rctx.file(to_check_path, data)
 
     for package, sh_lines in bootstrap_ctx.packages_install_fixups.items():
         rctx.file(
@@ -164,6 +182,7 @@ vcpkg_toolchain(
         "//vcpkg/scripts",
         "//vcpkg/triplets",
     ],
+    config_settings = {config_settings},
 )
 
 toolchain(
@@ -247,6 +266,7 @@ def _write_templates(rctx, bootstrap_ctx, depend_info, downloads_per_package):
     rctx.file("%s/BUILD.bazel" % bootstrap_ctx.output, _BUILD_BAZEL_TPL.format(
         os = bootstrap_ctx.pu.targets.os,
         arch = bootstrap_ctx.pu.targets.arch,
+        config_settings = format_inner_dict(bootstrap_ctx.config_settings),
     ))
 
     rctx.file("%s/vcpkg/BUILD.bazel" % bootstrap_ctx.output, _VCPKG_BAZEL)
@@ -347,7 +367,9 @@ def _bootrstrap_impl(rctx):
             packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
             packages_ports_patches = rctx.attr.packages_ports_patches,
             packages_src_patches = rctx.attr.packages_src_patches,
+            vcpkg_distro_fixup_replace = rctx.attr.vcpkg_distro_fixup_replace,
             verbose = rctx.attr.verbose,
+            config_settings = rctx.attr.config_settings,
         ),
     )
 
@@ -389,6 +411,14 @@ bootstrap = repository_rule(
         "packages_src_patches": attr.label_keyed_string_dict(
             mandatory = False,
             doc = "Patches to apply to src directory",
+        ),
+        "config_settings": attr.string_dict(
+            doc = "Vcpkg triplet configuration settings",
+            mandatory = True,
+        ),
+        "vcpkg_distro_fixup_replace": attr.string_list_dict(
+            mandatory = False,
+            doc = "Key is file path and value - list of sequential pairs of values, pattern to search and relace to",
         ),
         "sha256": attr.string(
             mandatory = False,

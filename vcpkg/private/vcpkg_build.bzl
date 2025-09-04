@@ -157,7 +157,8 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "__assets__": "%s/assets" % vcpkg_repo_root,
             "__package_output_dir__": paths.dirname(package_output_dir.path),
             "__package_output_basename__": paths.basename(package_output_dir.path),
-            # "__cxx_compiler__": vcpkg_current_info.cxx_compiler_str,
+            "__cc_compiler__": vcpkg_current_info.cc_compiler,
+            "__cxx_compiler__": vcpkg_current_info.cxx_compiler,
             "__overlay_tripplets__": _commonprefix([
                 ot.path
                 for ot in overlay_triplets

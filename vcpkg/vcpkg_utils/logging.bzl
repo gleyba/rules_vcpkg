@@ -5,5 +5,5 @@ def _join(values, red):
     return "\n".join(result)
 
 L = struct(
-    warn = lambda *msgs: "\n%s" % _join(msgs, "\033[0;31m"),
+    warn = lambda *msgs: print("\n%s" % _join(msgs, "\033[0;31m")), # buildifier: disable=print
 )
