@@ -29,6 +29,8 @@ load(":{package_escaped}_build.bzl", "{package_escaped}_build")
     assets = "@{bootstrap_repo}//assets/{package}",
     package_features = {features},
     deps = {build_deps}, 
+    cflags = {cflags},
+    linkerflags = {linkerflags},
     visibility = ["//visibility:public"],
 )
 """
@@ -107,6 +109,8 @@ def _declare_impl(rctx):
                 bootstrap_repo = rctx.attr.bootstrap_repo,
                 features = format_inner_list(info["features"]),
                 build_deps = format_inner_list(info["deps"], pattern = "\"//{dep}/vcpkg_build\""),
+                cflags = format_inner_list(info["cflags"]),
+                linkerflags = format_inner_list(info["linkerflags"]),
             ),
         )
 

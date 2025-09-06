@@ -159,6 +159,8 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "__package_output_basename__": paths.basename(package_output_dir.path),
             "__cc_compiler__": vcpkg_current_info.cc_compiler,
             "__cxx_compiler__": vcpkg_current_info.cxx_compiler,
+            "__cflags__": " ".join(ctx.attr.cflags),
+            "__linkerflags__": " ".join(ctx.attr.linkerflags),
             "__overlay_tripplets__": _commonprefix([
                 ot.path
                 for ot in overlay_triplets
@@ -184,7 +186,7 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "VCPKG_MAX_CONCURRENCY": str(cpus),
             "VCPKG_DEBUG": str(int(is_debug)),
             "VCPKG_DEBUG_REUSE_OUTPUTS": str(int(is_debug and is_debug_reuse_outputs)),
-            "VCPKG_DEBUG_REUSE_SOURCES": str(int(is_debug and is_debug_reuse_outputs)),
+            "VCPKG_DEBUG_REUSE_SOURCES": str(int(is_debug and is_debug_reuse_sources)),
         },
         execution_requirements = execution_requirements,
         resource_set = resource_set,
@@ -223,6 +225,14 @@ def vcpkg_build(cpus, resource_set, execution_requirements):
                 VcpkgBuiltPackageInfo,
                 VcpkgPackageDepsInfo,
             ]),
+            "cflags": attr.string_list(
+                mandatory = False,
+                doc = "Additional c flags to propagate to build, are not transitive",
+            ),
+            "linkerflags": attr.string_list(
+                mandatory = False,
+                doc = "Additional linker flags to propagate to build, are not transitive",
+            ),
             "_call_vcpkg_wrapper_tpl": attr.label(
                 default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
                 allow_single_file = True,

@@ -1,6 +1,11 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@cc_toolchain_util.bzl", "CxxFlagsInfo", "get_env_vars", "get_flags_info", "get_tools_info")
 
+_EXCLUDE_LINKER_FLAGS = [
+    # Do not propagate '-shared' flag, underlying VCPKG machinery can decide by itself if to do this
+    "-shared",
+]
+
 _collect_opt_flags_transition = transition(
     implementation = lambda _, __: {
         "//command_line_option:compilation_mode": "opt",
@@ -98,14 +103,13 @@ def _vcpkg_cc_info_impl(ctx):
         opt_cxx_linker_executable,
         dbg_cxx_linker_shared,
         dbg_cxx_linker_executable,
-    )
+    ).difference(_EXCLUDE_LINKER_FLAGS)
 
-    # Do not propagate '-shared' flag, underlying VCPKG machinery can decide by itself if to do this
-    opt_linker_flags_shared = opt_cxx_linker_shared.difference(["-shared"])
-    opt_linker_flags_exe = opt_cxx_linker_executable.difference(["-shared"])
+    opt_linker_flags_shared = opt_cxx_linker_shared.difference(_EXCLUDE_LINKER_FLAGS)
+    opt_linker_flags_exe = opt_cxx_linker_executable.difference(_EXCLUDE_LINKER_FLAGS)
 
-    dbg_linker_flags_shared = dbg_cxx_linker_shared.difference(["-shared"])
-    dbg_linker_flags_exe = dbg_cxx_linker_executable.difference(["-shared"])
+    dbg_linker_flags_shared = dbg_cxx_linker_shared.difference(_EXCLUDE_LINKER_FLAGS)
+    dbg_linker_flags_exe = dbg_cxx_linker_executable.difference(_EXCLUDE_LINKER_FLAGS)
 
     cc_toolchain = ctx.toolchains["@rules_cc//cc:toolchain_type"]
 

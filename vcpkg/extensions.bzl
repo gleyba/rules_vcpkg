@@ -11,6 +11,7 @@ _bootstrap = tag_class(attrs = {
     "commit": attr.string(doc = "The vcpkg commit, either this or version must be specified"),
     "sha256": attr.string(doc = "Shasum of vcpkg"),
     "verbose": attr.bool(doc = "If to print debug info", default = False),
+    "allow_unsupported": attr.bool(doc = "Allow initialization of unsupported packages for host platform", default = False),
     "config_settings": attr.string_dict(
         doc = "Vcpkg triplet configuration settings",
         default = DEFAULT_CONFIG_SETTINGS,
@@ -51,6 +52,15 @@ Environment variable 'BUILDTREE_DIR' and will be available.
     "src_patches": attr.label_list(
         doc = "Patches to apply to package src dir",
     ),
+    "drop_features": attr.string_list(
+        doc = "Features to force drop on package",
+    ),
+    "cflags": attr.string_list(
+        doc = "Additional c flags to propagate to build, are not transitive",
+    ),
+    "linkerflags": attr.string_list(
+        doc = "Additional linker flags to propagate to build, are not transitive",
+    ),
     "os": attr.string(
         default = "*",
         doc = "Filter by os, e.g. macos, linux, or '*' for any",
@@ -75,6 +85,9 @@ def _vcpkg(mctx):
     packages_buildtree_fixups = {}
     packages_ports_patches = {}
     packages_src_patches = {}
+    packages_drop_features = {}
+    packages_cflags = {}
+    packages_linkerflags = {}
     pp_to_include_postfixes = {}
     for mod in mctx.modules:
         for bootstrap_defs in mod.tags.bootstrap:
@@ -110,6 +123,24 @@ def _vcpkg(mctx):
                 configure.buildtree_fixups,
             )
 
+            add_or_extend_list_in_dict(
+                packages_drop_features,
+                configure.package,
+                configure.drop_features,
+            )
+
+            add_or_extend_list_in_dict(
+                packages_cflags,
+                configure.package,
+                configure.cflags,
+            )
+
+            add_or_extend_list_in_dict(
+                packages_linkerflags,
+                configure.package,
+                configure.linkerflags,
+            )
+
             for patch in configure.port_patches:
                 packages_ports_patches[patch] = configure.package
 
@@ -136,10 +167,14 @@ def _vcpkg(mctx):
         packages = list(packages),
         packages_install_fixups = packages_install_fixups,
         packages_buildtree_fixups = packages_buildtree_fixups,
+        packages_drop_features = packages_drop_features,
+        packages_cflags = packages_cflags,
+        packages_linkerflags = packages_linkerflags,
         packages_ports_patches = packages_ports_patches,
         packages_src_patches = packages_src_patches,
         external_bins = "@vcpkg_external//bin",
         verbose = cur_bootstrap.verbose,
+        allow_unsupported = cur_bootstrap.allow_unsupported,
         config_settings = cur_bootstrap.config_settings,
         vcpkg_distro_fixup_replace = cur_bootstrap.vcpkg_distro_fixup_replace,
     )

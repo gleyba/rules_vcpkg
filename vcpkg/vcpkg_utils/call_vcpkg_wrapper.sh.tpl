@@ -18,6 +18,9 @@ export VCPKG_ROOT="${VCPKG_EXEC_ROOT}/__vcpkg_root__"
 export CC=__cc_compiler__
 export CXX=__cxx_compiler__
 
+export VCPKG_C_FLAGS="__cflags__"
+export VCPKG_LINKER_FLAGS="__linkerflags__"
+
 vcpkg_bin="${PWD}/__vcpkg_bin__"
 prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
 

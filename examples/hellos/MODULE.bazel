@@ -71,7 +71,6 @@ vcpkg.configure(
     cpus = "HOST_CPUS",
     package = "google-cloud-cpp",
 )
-
 use_repo(
     vcpkg,
     "vcpkg",
