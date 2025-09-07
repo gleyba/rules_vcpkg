@@ -40,6 +40,9 @@ def vcpkg_exec(rctx, cmd, args, bootstrap_ctx):
         "--vcpkg-root=vcpkg",
     ]
 
+    if cmd == "install" and bootstrap_ctx.allow_unsupported:
+        vcpkg_args.append("--allow-unsupported")
+
     return exec_check(
         rctx,
         "vckpg %s" % cmd,
