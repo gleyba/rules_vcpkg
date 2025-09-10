@@ -38,6 +38,9 @@ def _process(rctx, def_name, defs, pu):
     for kwargs in cur_defs.get("download_and_extract", []):
         rctx.download_and_extract(**kwargs)
 
+    for kwargs in cur_defs.get("download", []):
+        rctx.download(**kwargs)
+
     for kwargs in cur_defs.get("symlink", []):
         rctx.symlink(
             kwargs.pop("target"),

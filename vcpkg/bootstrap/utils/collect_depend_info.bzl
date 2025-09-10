@@ -84,9 +84,11 @@ def collect_depend_info(rctx, bootstrap_ctx):
 
     for package_info_raw in info_raw.split("\n"):
         package_info, err = _parse_package_info(package_info_raw)
-        if err != None and (bootstrap_ctx.verbose or "--allow-unsupported" in err):
-            L.warn(err)
-            continue
+        if err != None:
+            if bootstrap_ctx.verbose:
+                L.warn(err)
+            elif not bootstrap_ctx.allow_unsupported and "--allow-unsupported" in err:
+                L.warn(err)
 
         if package_info == None:
             continue

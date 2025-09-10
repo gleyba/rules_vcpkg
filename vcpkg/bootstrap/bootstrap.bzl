@@ -35,7 +35,7 @@ exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
 def _initialize(rctx, bootstrap_ctx):
-    rctx.report_progress("Initializing VCPKG and pactching ports")
+    rctx.report_progress("VCPKG: Initializing")
     rctx.file(
         "vcpkg.json",
         json.encode_indent({
@@ -61,6 +61,15 @@ def _initialize(rctx, bootstrap_ctx):
         ),
     )
 
+def _list_to_pairs(items):
+    return [
+        (items[i], items[i + 1])
+        for i in range(0, len(items), 2)
+    ]
+
+def _perform_distro_fixups(rctx, bootstrap_ctx):
+    rctx.report_progress("VCPKG: distro fixups and ports patching")
+
     for patch_file, package in bootstrap_ctx.packages_ports_patches.items():
         patch(
             rctx,
@@ -75,15 +84,6 @@ def _initialize(rctx, bootstrap_ctx):
         )
         rctx.watch(patch_file)
 
-def _list_to_pairs(items):
-    return [
-        (items[i], items[i + 1])
-        for i in range(0, len(items), 2)
-    ]
-
-def _perform_install_fixups(rctx, bootstrap_ctx):
-    rctx.report_progress("Initializing VCPKG and pactching ports")
-
     for file, replaces in bootstrap_ctx.vcpkg_distro_fixup_replace.items():
         to_check_path = rctx.path("%s/vcpkg/%s" % (bootstrap_ctx.output, file))
         if not to_check_path.exists:
@@ -96,7 +96,24 @@ def _perform_install_fixups(rctx, bootstrap_ctx):
         rctx.delete(to_check_path)
         rctx.file(to_check_path, data)
 
-    for package, sh_lines in bootstrap_ctx.packages_install_fixups.items():
+def _perform_install_fixups(rctx, bootstrap_ctx, depend_info):
+    rctx.report_progress("VCPKG: install fixups")
+
+    for package in depend_info:
+        sh_lines = []
+        if bootstrap_ctx.allow_unsupported:
+            sh_lines += [
+                "jq 'del(.supports)' ${PORT_DIR}/vcpkg.json > ${PORT_DIR}/vcpkg.json.tmp",
+                "rm ${PORT_DIR}/vcpkg.json",
+                "mv ${PORT_DIR}/vcpkg.json.tmp ${PORT_DIR}/vcpkg.json",
+            ]
+
+        if package in bootstrap_ctx.packages_install_fixups:
+            sh_lines += bootstrap_ctx.packages_install_fixups[package]
+
+        if not sh_lines:
+            continue
+
         rctx.file(
             "%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package),
             content = "\n".join([
@@ -105,9 +122,13 @@ def _perform_install_fixups(rctx, bootstrap_ctx):
             ] + sh_lines),
             executable = True,
         )
-        rctx.execute(
+
+        _, err = exec_check(
+            rctx,
+            "install_fixups",
             ["%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package)],
-            environment = {
+            env = {
+                "PATH": bootstrap_ctx.external_bins,
                 "PORT_DIR": "%s/vcpkg/ports/%s" % (bootstrap_ctx.output, package),
                 "INSTALL_DIR": "%s/install/%s" % (
                     bootstrap_ctx.tmpdir,
@@ -115,6 +136,11 @@ def _perform_install_fixups(rctx, bootstrap_ctx):
                 ),
             },
         )
+
+        if err:
+            return err
+
+    return None
 
 def _perform_buildtree_fixups(rctx, bootstrap_ctx):
     rctx.report_progress("Performing VCPKG buildtrees fixups")
@@ -300,9 +326,13 @@ def _bootstrap(rctx, bootstrap_ctx):
 
     _initialize(rctx, bootstrap_ctx)
 
-    _perform_install_fixups(rctx, bootstrap_ctx)
+    _perform_distro_fixups(rctx, bootstrap_ctx)
 
     depend_info, err = collect_depend_info(rctx, bootstrap_ctx)
+    if err:
+        return err
+
+    err = _perform_install_fixups(rctx, bootstrap_ctx, depend_info)
     if err:
         return err
 

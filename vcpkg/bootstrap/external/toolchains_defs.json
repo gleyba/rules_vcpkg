@@ -94,6 +94,14 @@
                 "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf_archive.macos.arm64.zip",
                 "sha256": "b74f910de9fbde168bc7dc1991159a666646783bf8312d7a0c06f72fbb6e02ff"
             }
+        ],
+        "download": [
+            {
+                "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-macos-arm64",
+                "sha256": "a9fe3ea2f86dfc72f6728417521ec9067b343277152b114f4e98d8cb0e263603",
+                "output": "bin/jq",
+                "executable": true
+            }
         ]
     },
     "macos_amd64": {
@@ -146,6 +154,14 @@
             }, {
                 "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.macos.amd64.zip",
                 "sha256": "39795e4c59334145a1685a065d383cb48ad3fe478e76593952216fd3bb0ff7e1"
+            }
+        ],
+        "download": [
+            {
+                "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-macos-amd64",
+                "sha256": "e80dbe0d2a2597e3c11c404f03337b981d74b4a8504b70586c354b7697a7c27f",
+                "output": "bin/jq",
+                "executable": true
             }
         ]
     },
@@ -220,6 +236,14 @@
                 "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/pkgconfig.linux.arm64.zip",
                 "sha256": "c8ddfe21e9959ab7a4183e9bc892c546abdf02ce24920280916d4eff35cc8fd5"
             }
+        ],
+        "download": [
+            {
+                "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-arm64",
+                "sha256": "6bc62f25981328edd3cfcfe6fe51b073f2d7e7710d7ef7fcdac28d4e384fc3d4",
+                "output": "bin/jq",
+                "executable": true
+            }
         ]
     },
     "linux_amd64": {
@@ -281,6 +305,14 @@
             }, {
                 "url": "https://github.com/gleyba/rules_vcpkg_externals/releases/download/0.1.0/autoconf_archive.linux.amd64.zip",
                 "sha256": "b74f910de9fbde168bc7dc1991159a666646783bf8312d7a0c06f72fbb6e02ff"
+            }
+        ],
+        "download": [
+            {
+                "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-amd64",
+                "sha256": "020468de7539ce70ef1bceaf7cde2e8c4f2ca6c3afb84642aabc5c97d9fc2a0d",
+                "output": "bin/jq",
+                "executable": true
             }
         ]
     },
