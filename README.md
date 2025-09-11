@@ -28,7 +28,7 @@ But to try yourself this not yet polished version, add to `MODULE.bazel`:
 git_override(
     module_name = "rules_vcpkg", 
     remote = "https://github.com/gleyba/rules_vcpkg",
-    branch = "master",
+    branch = "main",
 )
 
 vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions.bzl", "vcpkg")

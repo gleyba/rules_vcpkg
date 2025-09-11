@@ -96,17 +96,48 @@ def _perform_distro_fixups(rctx, bootstrap_ctx):
         rctx.delete(to_check_path)
         rctx.file(to_check_path, data)
 
+_DROP_FEATURE_TPL = """\
+.dependencies = if has("dependencies") then (.dependencies | map(if type=="object" and .name == "{package}" then del(.features[] | select(. == "{feature}")) else . end)) else [] end\
+"""
+
+def _add_jq_processing(bootstrap_ctx, root_package):
+    jq_lines = []
+    if bootstrap_ctx.allow_unsupported:
+        jq_lines.append("del(.supports)")
+
+    for package, drop_features in bootstrap_ctx.packages_drop_features.items():
+        if package == root_package:
+            continue
+
+        for drop_feature in drop_features:
+            jq_lines.append(_DROP_FEATURE_TPL.format(
+                package = package,
+                feature = drop_feature,
+            ))
+
+    if not jq_lines:
+        return []
+
+    return [
+        "cat ${PORT_DIR}/vcpkg.json \\",
+    ] + [
+        "| jq '%s' \\" % jq_line
+        for jq_line in jq_lines
+    ] + [
+        "> ${PORT_DIR}/vcpkg.json.tmp",
+        "rm ${PORT_DIR}/vcpkg.json",
+        "mv ${PORT_DIR}/vcpkg.json.tmp ${PORT_DIR}/vcpkg.json",
+    ]
+
 def _perform_install_fixups(rctx, bootstrap_ctx, depend_info):
     rctx.report_progress("VCPKG: install fixups")
 
     for package in depend_info:
         sh_lines = []
-        if bootstrap_ctx.allow_unsupported:
-            sh_lines += [
-                "jq 'del(.supports)' ${PORT_DIR}/vcpkg.json > ${PORT_DIR}/vcpkg.json.tmp",
-                "rm ${PORT_DIR}/vcpkg.json",
-                "mv ${PORT_DIR}/vcpkg.json.tmp ${PORT_DIR}/vcpkg.json",
-            ]
+
+        port_dir_path = "%s/vcpkg/ports/%s" % (bootstrap_ctx.output, package)
+        if rctx.path("%s/vcpkg.json" % port_dir_path).exists:
+            sh_lines += _add_jq_processing(bootstrap_ctx, package)
 
         if package in bootstrap_ctx.packages_install_fixups:
             sh_lines += bootstrap_ctx.packages_install_fixups[package]
@@ -125,11 +156,11 @@ def _perform_install_fixups(rctx, bootstrap_ctx, depend_info):
 
         _, err = exec_check(
             rctx,
-            "install_fixups",
+            "install_fixups for %s" % package,
             ["%s/install_fixups/%s.sh" % (bootstrap_ctx.output, package)],
             env = {
                 "PATH": bootstrap_ctx.external_bins,
-                "PORT_DIR": "%s/vcpkg/ports/%s" % (bootstrap_ctx.output, package),
+                "PORT_DIR": port_dir_path,
                 "INSTALL_DIR": "%s/install/%s" % (
                     bootstrap_ctx.tmpdir,
                     bootstrap_ctx.pu.prefix,
