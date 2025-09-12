@@ -149,7 +149,7 @@
   "moduleExtensions": {
     "//vcpkg:extensions.bzl%vcpkg_external": {
       "general": {
-        "bzlTransitiveDigest": "n0fwDIY4EIiNMyNtJI4mzgbhoYqnOZk8OcpJhPVkr7w=",
+        "bzlTransitiveDigest": "wjX1l5z0BJAp1a45H+H6E1jnzHToneAUWwdp/m6wETI=",
         "usagesDigest": "oj3fpFM7521B136wND1t2N2Azeuer89sMtRjpAlffPI=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

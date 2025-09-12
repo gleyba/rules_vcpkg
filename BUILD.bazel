@@ -15,11 +15,3 @@ bool_flag(
     build_setting_default = False,
     visibility = ["//visibility:public"],
 )
-
-# If set and build souces exist in `/tmp/vcpkg/builtrees/<package_name>/src` dir,
-# will reuse these souces instead of cleanup.
-bool_flag(
-    name = "debug_reuse_sources",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)

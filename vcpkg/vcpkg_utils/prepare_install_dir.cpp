@@ -113,18 +113,17 @@ bool ends_with(const std::string& s, const std::string& suffix) {
 
 const std::string s_venv_postfix = "-venv";
 
-void prepare_build_root(
+std::optional<fs::path> prepare_build_root(
     const fs::path& buildtrees_root, 
     const fs::path& buildtrees_tmp,
-    bool reuse_install_dirs,
-    bool reuse_sources
+    bool has_sources_override,
+    bool reuse_install_dirs
 ) {
-    fs::copy_options co = reuse_sources 
-        ? fs::copy_options::skip_existing
-        : reuse_install_dirs
-            ? fs::copy_options::update_existing
-            : fs::copy_options::none;
+    fs::copy_options co = reuse_install_dirs
+        ? fs::copy_options::update_existing
+        : fs::copy_options::none;
 
+    std::optional<fs::path> sources_location;
     for (const auto& package_buildtree_entry: fs::directory_iterator { buildtrees_root }) {
         for (const auto& package_inner_entry:  fs::directory_iterator { package_buildtree_entry.path() }) {
             fs::path entry_path = package_inner_entry.path();
@@ -134,9 +133,14 @@ void prepare_build_root(
                     if (src.extension() != ".clean") {
                         continue;
                     }
-
+                    
                     fs::path dst =  buildtrees_tmp / src.lexically_relative(buildtrees_root);
                     dst.replace_extension("");
+                    sources_location = dst;
+                    if (has_sources_override) {
+                        continue;
+                    }
+
                     copy_sources(src, dst, co, false);
                 }
             } else if (ends_with(entry_path.string(), s_venv_postfix)) {
@@ -145,6 +149,8 @@ void prepare_build_root(
             }
         }
     }
+
+    return sources_location;
 }
 
 int main(int argc, char ** argv) {
@@ -152,8 +158,8 @@ int main(int argc, char ** argv) {
     fs::path install_dir = buildtrees_tmp / "install";
     fs::path packages_outputs_list_path { argv[2] };
     fs::path buildtrees_root { argv[3] };
-    bool reuse_install_dirs = strcmp(argv[4], "1") == 0;
-    bool reuse_sources = strcmp(argv[5], "1") == 0;
+    std::string override_sources { argv[4] };
+    bool reuse_install_dirs = strcmp(argv[5], "1") == 0;
 
     prepare_install_dir(
         install_dir, 
@@ -161,12 +167,27 @@ int main(int argc, char ** argv) {
         reuse_install_dirs
     );
 
-    prepare_build_root(
+    bool has_sources_override = override_sources != "nope";
+
+    auto sources_location = prepare_build_root(
         buildtrees_root, 
         buildtrees_tmp,
-        reuse_install_dirs,
-        reuse_sources
+        has_sources_override,
+        reuse_install_dirs
     );
+
+    if (has_sources_override) {
+        if (!sources_location) {
+            throw std::runtime_error("Can't detect sources location for sources override");
+        }
+
+        copy_sources(
+            override_sources,
+            sources_location.value(),
+            fs::copy_options::update_existing,
+            false
+        );
+    }
 
     return 0;
 }

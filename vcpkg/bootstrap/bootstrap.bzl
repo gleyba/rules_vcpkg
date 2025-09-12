@@ -427,8 +427,6 @@ def _bootrstrap_impl(rctx):
             packages_install_fixups = rctx.attr.packages_install_fixups,
             packages_buildtree_fixups = rctx.attr.packages_buildtree_fixups,
             packages_drop_features = rctx.attr.packages_drop_features,
-            packages_cflags = rctx.attr.packages_cflags,
-            packages_linkerflags = rctx.attr.packages_linkerflags,
             packages_ports_patches = rctx.attr.packages_ports_patches,
             packages_src_patches = rctx.attr.packages_src_patches,
             vcpkg_distro_fixup_replace = rctx.attr.vcpkg_distro_fixup_replace,
@@ -472,14 +470,6 @@ bootstrap = repository_rule(
         "packages_drop_features": attr.string_list_dict(
             mandatory = False,
             doc = "Features to force drop on package",
-        ),
-        "packages_cflags": attr.string_list_dict(
-            mandatory = False,
-            doc = "Additional c flags to propagate to build, are not transitive",
-        ),
-        "packages_linkerflags": attr.string_list_dict(
-            mandatory = False,
-            doc = "Additional linker flags to propagate to build, are not transitive",
         ),
         "packages_ports_patches": attr.label_keyed_string_dict(
             mandatory = False,

@@ -33,18 +33,10 @@ def _parse_package_info(package_info_raw):
         deps = deps_list,
     ), None
 
-def _add_to_result(result, package_info, bootstrap_ctx):
+def _add_to_result(result, package_info):
     result[package_info.package] = struct(
         features = package_info.features,
         deps = package_info.deps,
-        cflags = bootstrap_ctx.packages_cflags.get(
-            package_info.package,
-            default = [],
-        ),
-        linkerflags = bootstrap_ctx.packages_linkerflags.get(
-            package_info.package,
-            default = [],
-        ),
     )
 
 def _collect_depend_info_exact(rctx, bootstrap_ctx, packages):
@@ -66,7 +58,7 @@ def _collect_depend_info_exact(rctx, bootstrap_ctx, packages):
         if not package_info.package in packages:
             continue
 
-        _add_to_result(result, package_info, bootstrap_ctx)
+        _add_to_result(result, package_info)
 
     return result, None
 
@@ -103,7 +95,7 @@ def collect_depend_info(rctx, bootstrap_ctx):
                 ))
                 continue
 
-        _add_to_result(result, package_info, bootstrap_ctx)
+        _add_to_result(result, package_info)
 
     if packages_to_requery:
         requery_result, err = _collect_depend_info_exact(rctx, bootstrap_ctx, packages_to_requery)

@@ -30,6 +30,7 @@ load(":{package_escaped}_build.bzl", "{package_escaped}_build")
     package_features = {features},
     deps = {build_deps}, 
     cflags = {cflags},
+    override_sources = "{override_sources}",
     linkerflags = {linkerflags},
     visibility = ["//visibility:public"],
 )
@@ -109,8 +110,9 @@ def _declare_impl(rctx):
                 bootstrap_repo = rctx.attr.bootstrap_repo,
                 features = format_inner_list(info["features"]),
                 build_deps = format_inner_list(info["deps"], pattern = "\"//{dep}/vcpkg_build\""),
-                cflags = format_inner_list(info["cflags"]),
-                linkerflags = format_inner_list(info["linkerflags"]),
+                cflags = format_inner_list(rctx.attr.packages_cflags.get(package, default = [])),
+                linkerflags = format_inner_list(rctx.attr.packages_linkerflags.get(package, default = [])),
+                override_sources = rctx.attr.packages_override_sources.get(package, default = "nope"),
             ),
         )
 
@@ -182,6 +184,18 @@ declare = repository_rule(
         "packages_cpus": attr.string_dict(
             mandatory = False,
             doc = "Packages build assigned cpu count",
+        ),
+        "packages_cflags": attr.string_list_dict(
+            mandatory = False,
+            doc = "Additional c flags to propagate to build, are not transitive",
+        ),
+        "packages_linkerflags": attr.string_list_dict(
+            mandatory = False,
+            doc = "Additional linker flags to propagate to build, are not transitive",
+        ),
+        "packages_override_sources": attr.string_dict(
+            mandatory = False,
+            doc = "Override sources location for packages, useful for debug",
         ),
         "pp_to_include_postfixes": attr.string_list_dict(
             mandatory = False,

@@ -61,6 +61,9 @@ Environment variable 'BUILDTREE_DIR' and will be available.
     "linkerflags": attr.string_list(
         doc = "Additional linker flags to propagate to build, are not transitive",
     ),
+    "override_sources": attr.string(
+        doc = "Override sources location, useful for debug",
+    ),
     "os": attr.string(
         default = "*",
         doc = "Filter by os, e.g. macos, linux, or '*' for any",
@@ -88,6 +91,7 @@ def _vcpkg(mctx):
     packages_drop_features = {}
     packages_cflags = {}
     packages_linkerflags = {}
+    packages_override_sources = {}
     pp_to_include_postfixes = {}
     for mod in mctx.modules:
         for bootstrap_defs in mod.tags.bootstrap:
@@ -147,6 +151,12 @@ def _vcpkg(mctx):
             for patch in configure.src_patches:
                 packages_src_patches[patch] = configure.package
 
+            if configure.override_sources:
+                if configure.package in packages_override_sources:
+                    fail("Sources location override set twice for %s" % configure.package)
+
+                packages_override_sources[configure.package] = configure.override_sources
+
         for configure_prefixed in mod.tags.configure_prefixed:
             add_or_extend_list_in_dict(
                 pp_to_include_postfixes,
@@ -168,8 +178,6 @@ def _vcpkg(mctx):
         packages_install_fixups = packages_install_fixups,
         packages_buildtree_fixups = packages_buildtree_fixups,
         packages_drop_features = packages_drop_features,
-        packages_cflags = packages_cflags,
-        packages_linkerflags = packages_linkerflags,
         packages_ports_patches = packages_ports_patches,
         packages_src_patches = packages_src_patches,
         external_bins = "@vcpkg_external//bin",
@@ -185,6 +193,9 @@ def _vcpkg(mctx):
         depend_info = "@vcpkg_bootstrap//:depend_info.json",
         packages = list(packages),
         packages_cpus = packages_cpus,
+        packages_cflags = packages_cflags,
+        packages_linkerflags = packages_linkerflags,
+        packages_override_sources = packages_override_sources,
         pp_to_include_postfixes = pp_to_include_postfixes,
     )
 

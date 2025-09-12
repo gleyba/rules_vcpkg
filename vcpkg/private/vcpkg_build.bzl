@@ -154,6 +154,7 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "__port_root__": port.path,
             "__buildtrees_root__": "%s/buildtrees" % vcpkg_root,
             "__downloads_root__": "%s/downloads" % vcpkg_repo_root,
+            "__override_sources__": ctx.attr.override_sources,
             "__assets__": "%s/assets" % vcpkg_repo_root,
             "__package_output_dir__": paths.dirname(package_output_dir.path),
             "__package_output_basename__": paths.basename(package_output_dir.path),
@@ -170,7 +171,6 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
 
     is_debug = ctx.attr._debug[BuildSettingInfo].value
     is_debug_reuse_outputs = ctx.attr._debug_reuse_outputs[BuildSettingInfo].value
-    is_debug_reuse_sources = ctx.attr._debug_reuse_sources[BuildSettingInfo].value
 
     ctx.actions.run(
         tools = [
@@ -186,7 +186,6 @@ def _vcpkg_build_impl(ctx, cpus, resource_set, execution_requirements):
             "VCPKG_MAX_CONCURRENCY": str(cpus),
             "VCPKG_DEBUG": str(int(is_debug)),
             "VCPKG_DEBUG_REUSE_OUTPUTS": str(int(is_debug and is_debug_reuse_outputs)),
-            "VCPKG_DEBUG_REUSE_SOURCES": str(int(is_debug and is_debug_reuse_sources)),
         },
         execution_requirements = execution_requirements,
         resource_set = resource_set,
@@ -233,6 +232,10 @@ def vcpkg_build(cpus, resource_set, execution_requirements):
                 mandatory = False,
                 doc = "Additional linker flags to propagate to build, are not transitive",
             ),
+            "override_sources": attr.string(
+                mandatory = False,
+                doc = "Override sources location, useful for debug",
+            ),
             "_call_vcpkg_wrapper_tpl": attr.label(
                 default = "@rules_vcpkg//vcpkg/vcpkg_utils:call_vcpkg_wrapper_tpl",
                 allow_single_file = True,
@@ -257,10 +260,6 @@ def vcpkg_build(cpus, resource_set, execution_requirements):
             "_debug_reuse_outputs": attr.label(
                 providers = [BuildSettingInfo],
                 default = "//:debug_reuse_outputs",
-            ),
-            "_debug_reuse_sources": attr.label(
-                providers = [BuildSettingInfo],
-                default = "//:debug_reuse_sources",
             ),
             "_externals": attr.label(
                 providers = [DefaultInfo],
