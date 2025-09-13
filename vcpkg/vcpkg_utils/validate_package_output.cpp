@@ -1,13 +1,20 @@
 #include <string>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
+
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace fs = std::filesystem;
 
 int main(int argc, char ** argv) {
     std::string package_output_origin_dir_str { argv[1] };
     fs::path package_output_origin_dir { package_output_origin_dir_str };
-    fs::path port_dir_str { argv[2] };
+    std::ifstream cfg_json_ifs { argv[2] };
+    json cfg_json = json::parse(cfg_json_ifs);
+    fs::path port_root = cfg_json["port_root"];
 
     for (const auto& dir_entry : fs::recursive_directory_iterator{package_output_origin_dir}) {
         fs::path entry_path = dir_entry.path();
@@ -35,7 +42,7 @@ int main(int argc, char ** argv) {
             continue;
         }
 
-        if (link_destination_str.find(port_dir_str) != 0) {
+        if (link_destination_str.find(port_root) != 0) {
             fs::remove(entry_path);
             fs::copy_file(
                 link_destination,
@@ -50,7 +57,7 @@ int main(int argc, char ** argv) {
             << "is absolute and points outside of origin output dir:\n"
             << package_output_origin_dir_str << "\n"
             << "or ports dir:\n"
-            << port_dir_str
+            << port_root
             << std::endl;
 
         return 127;

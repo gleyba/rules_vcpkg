@@ -12,6 +12,10 @@
 #include "package_ctrl.hpp"
 #include "copy_sources.hpp"
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace fs = std::filesystem;
 
 std::vector<package_control_t> read_packages(const fs::path& packages_outputs_list_path) {
@@ -23,16 +27,6 @@ std::vector<package_control_t> read_packages(const fs::path& packages_outputs_li
     }
     return packages_ctrls;
 }
-
-// void write_manifest(const fs::path& vcpkg_meta_dir, const fs::path& manifest_path) {
-//     std::ofstream manifest_info(vcpkg_meta_dir / "manifest-info.json");
-//     manifest_info << "{\n" 
-//         << "  \"manifest-path\": "
-//         << manifest_path.lexically_relative(vcpkg_meta_dir)
-//         << "\n"
-//         << "}\n";
-//     manifest_info.close();
-// }
 
 void write_status(const fs::path& vcpkg_meta_dir, const std::vector<package_control_t>& packages_ctrls) {
     std::ofstream status_ofs(vcpkg_meta_dir / "status");
@@ -58,14 +52,12 @@ void write_listing(const fs::path& vcpkg_info_dir, const package_control_t& ctrl
 
 void prepare_install_dir(
     const fs::path& install_dir,
-    // const fs::path& manifest_path,
     const fs::path& packages_outputs_list_path,
     bool reuse_install_dirs
 ) {
     auto packages_ctrls = read_packages(packages_outputs_list_path);
     fs::path vcpkg_meta_dir = install_dir / "vcpkg"; 
     fs::create_directories(vcpkg_meta_dir);
-    // write_manifest(vcpkg_meta_dir, manifest_path);
     write_status(vcpkg_meta_dir, packages_ctrls);
 
     fs::path vcpkg_info_dir = vcpkg_meta_dir / "info";
@@ -156,10 +148,27 @@ std::optional<fs::path> prepare_build_root(
 int main(int argc, char ** argv) {
     fs::path buildtrees_tmp { argv[1] };
     fs::path install_dir = buildtrees_tmp / "install";
-    fs::path packages_outputs_list_path { argv[2] };
-    fs::path buildtrees_root { argv[3] };
-    std::string override_sources { argv[4] };
-    bool reuse_install_dirs = strcmp(argv[5], "1") == 0;
+    fs::path downloads_dir = buildtrees_tmp / "downloads";
+    fs::create_directories(buildtrees_tmp);
+    
+    std::ifstream cfg_json_ifs { argv[2] };
+    json cfg_json = json::parse(cfg_json_ifs);
+    fs::path buildtrees_root = cfg_json["buildtrees_root"];
+    fs::path downloads_root = cfg_json["downloads_root"];
+    if (fs::exists(downloads_dir)) {
+        fs::remove(downloads_dir);
+    }
+    if (fs::exists(downloads_root)) {
+        fs::create_symlink(fs::absolute(downloads_root), downloads_dir);
+    }
+
+    fs::path packages_outputs_list_path = cfg_json["packages_list_file"];
+    bool reuse_install_dirs = cfg_json["reuse_outputs"];
+
+    std::optional<fs::path> override_sources;
+    if (cfg_json.contains("override_sources")) {
+        override_sources = fs::path { cfg_json["override_sources"] };
+    }
 
     prepare_install_dir(
         install_dir, 
@@ -167,22 +176,20 @@ int main(int argc, char ** argv) {
         reuse_install_dirs
     );
 
-    bool has_sources_override = override_sources != "nope";
-
     auto sources_location = prepare_build_root(
         buildtrees_root, 
         buildtrees_tmp,
-        has_sources_override,
+        override_sources.has_value(),
         reuse_install_dirs
     );
 
-    if (has_sources_override) {
+    if (override_sources) {
         if (!sources_location) {
             throw std::runtime_error("Can't detect sources location for sources override");
         }
 
         copy_sources(
-            override_sources,
+            override_sources.value(),
             sources_location.value(),
             fs::copy_options::update_existing,
             false

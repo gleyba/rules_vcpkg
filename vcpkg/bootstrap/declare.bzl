@@ -1,4 +1,5 @@
-load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_inner_list")
+load("@rules_pkg//pkg:providers.bzl", "PackageFilesInfo")
+load("//vcpkg/vcpkg_utils:format_utils.bzl", "add_or_extend_list_in_dict", "format_inner_list")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 _VCPKG_BUILD_BZL_TPL = """\
@@ -30,7 +31,8 @@ load(":{package_escaped}_build.bzl", "{package_escaped}_build")
     package_features = {features},
     deps = {build_deps}, 
     cflags = {cflags},
-    override_sources = "{override_sources}",
+    override_sources = {override_sources},
+    overlay_sources = {overlay_sources},
     linkerflags = {linkerflags},
     visibility = ["//visibility:public"],
 )
@@ -79,6 +81,10 @@ def _declare_impl(rctx):
 
     depend_info = json.decode(rctx.read(rctx.path(rctx.attr.depend_info)))
 
+    packages_overlay_sources = {}
+    for overlay_src, package in rctx.attr.packages_overlay_sources.items():
+        add_or_extend_list_in_dict(packages_overlay_sources, package, [overlay_src])
+
     for package, info in depend_info.items():
         include_postfixes = []
         for prefix, postfixes in rctx.attr.pp_to_include_postfixes.items():
@@ -102,6 +108,10 @@ def _declare_impl(rctx):
             ),
         )
 
+        override_sources = "None"
+        if package in rctx.attr.packages_override_sources:
+            override_sources = '"%s"' % rctx.attr.packages_override_sources[package]
+
         rctx.file(
             "%s/vcpkg_build/BUILD.bazel" % package,
             _VCPKG_BUILD_TPL.format(
@@ -110,9 +120,10 @@ def _declare_impl(rctx):
                 bootstrap_repo = rctx.attr.bootstrap_repo,
                 features = format_inner_list(info["features"]),
                 build_deps = format_inner_list(info["deps"], pattern = "\"//{dep}/vcpkg_build\""),
-                cflags = format_inner_list(rctx.attr.packages_cflags.get(package, default = [])),
-                linkerflags = format_inner_list(rctx.attr.packages_linkerflags.get(package, default = [])),
-                override_sources = rctx.attr.packages_override_sources.get(package, default = "nope"),
+                cflags = format_inner_list(rctx.attr.packages_cflags.get(package, [])),
+                linkerflags = format_inner_list(rctx.attr.packages_linkerflags.get(package, [])),
+                override_sources = override_sources,
+                overlay_sources = format_inner_list(packages_overlay_sources.get(package, [])),
             ),
         )
 
@@ -196,6 +207,11 @@ declare = repository_rule(
         "packages_override_sources": attr.string_dict(
             mandatory = False,
             doc = "Override sources location for packages, useful for debug",
+        ),
+        "packages_overlay_sources": attr.label_keyed_string_dict(
+            mandatory = False,
+            providers = [PackageFilesInfo],
+            doc = "Overlay sources to add to package srcs, created with `pkg_files`",
         ),
         "pp_to_include_postfixes": attr.string_list_dict(
             mandatory = False,

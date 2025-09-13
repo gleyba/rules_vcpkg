@@ -2,34 +2,11 @@
 
 set -eu pipefail
 
-if [[ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]]; then
-  set -x
-fi
-
-export HOME=/tmp/home
-export PATH="${PWD}/__bin_dir__"
-export M4="${PWD}/__bin_dir__/m4"
-
-export VCPKG_EXEC_ROOT="${PWD}"
-
-export VCPKG_OVERLAY_TRIPLETS="${VCPKG_EXEC_ROOT}/__overlay_tripplets__"
-export VCPKG_ROOT="${VCPKG_EXEC_ROOT}/__vcpkg_root__"
-
-export CC=__cc_compiler__
-export CXX=__cxx_compiler__
-
-export ADDITIONAL_CFLAGS="__cflags__"
-export ADDITIONAL_LINKER_FLAGS="__linkerflags__"
+__exports__
 
 vcpkg_bin="${PWD}/__vcpkg_bin__"
 prepare_install_dir_bin="${PWD}/__prepare_install_dir_bin__"
-
-: "${VCPKG_DEBUG:=0}"
-: "${VCPKG_DEBUG_REUSE_OUTPUTS:=0}"
-
-if [[ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]]; then
-  unset VCPKG_MAX_CONCURRENCY
-fi
+validate_package_output_bin="${PWD}/__validate_package_output_bin__"
 
 if [[ "${VCPKG_DEBUG}" == 1 ]]; then
   buildtrees_tmp="/tmp/vcpkg/builtrees/__package_name__"
@@ -54,19 +31,9 @@ if [ "${VCPKG_DEBUG}" == 1 ] && [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]; then
   fi
 fi
 
-install_root_tmp="${buildtrees_tmp}/install"
-mkdir -p "${install_root_tmp}"
-
-ln -sf "${VCPKG_EXEC_ROOT}/__downloads_root__" "${buildtrees_tmp}/downloads"
-
-rm -rf "${buildtrees_tmp}/install"
-
 "${prepare_install_dir_bin}" \
   "${buildtrees_tmp}" \
-  __packages_list_file__ \
-  __buildtrees_root__ \
-  __override_sources__ \
-  "${VCPKG_DEBUG_REUSE_OUTPUTS}"
+  __prepare_install_dir_cfg__
 
 vcpkg_args=(
   build
@@ -75,7 +42,7 @@ vcpkg_args=(
   --overlay-triplets=__overlay_tripplets__
   --x-buildtrees-root="${buildtrees_tmp}"
   --downloads-root="${buildtrees_tmp}/downloads"
-  --x-install-root="${install_root_tmp}"
+  --x-install-root="${buildtrees_tmp}/install"
   --x-packages-root="${packages_dir}"
   --x-asset-sources="x-script,${VCPKG_EXEC_ROOT}/__assets__/__package_name__/get_asset.sh --dst {dst} --sha512 {sha512}"
 )
@@ -99,9 +66,9 @@ if [ "${VCPKG_DEBUG}" == 1 ] && [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]; then
   set -e
 fi
 
-__validate_package_output_bin__ \
+"${validate_package_output_bin}" \
   "${packages_dir}/__package_output_basename__" \
-  "__port_root__"
+  __validate_package_output_cfg__
 
 if [ "${VCPKG_DEBUG}" == 1 ] && [ "${VCPKG_DEBUG_REUSE_OUTPUTS}" == 1 ]; then
   cp -r "${packages_dir}/__package_output_basename__" "__package_output_dir__"

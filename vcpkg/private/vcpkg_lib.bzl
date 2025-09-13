@@ -6,22 +6,16 @@ def _extract_package_outputs_impl(ctx):
     output_dir = ctx.actions.declare_directory(ctx.attr.name)
 
     args = ctx.actions.args()
-    args.add(package_info.output.path)
+    args.add(package_info.outputs[0].path)
     args.add(output_dir.path)
     args.add(ctx.attr.dir_prefix)
     args.add(ctx.attr.collect_type)
     args.add_all(ctx.files.additional)
 
     ctx.actions.run(
-        tools = [
-            ctx.executable._extract_package_outputs,
-        ],
-        inputs = [
-            package_info.output,
-        ] + ctx.files.additional,
-        outputs = [
-            output_dir,
-        ],
+        tools = [ctx.executable._extract_package_outputs],
+        inputs = package_info.outputs + ctx.files.additional,
+        outputs = [output_dir],
         executable = ctx.executable._extract_package_outputs,
         arguments = [args],
     )

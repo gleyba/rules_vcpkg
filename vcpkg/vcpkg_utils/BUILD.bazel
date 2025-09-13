@@ -45,6 +45,7 @@ cc_binary(
     deps = [
         ":copy_sources",
         ":package_ctrl",
+        "@nlohmann_json//:json",
     ],
 )
 
@@ -60,4 +61,5 @@ cc_binary(
     srcs = ["validate_package_output.cpp"],
     copts = _COMMON_COPTS,
     visibility = ["//visibility:public"],
+    deps = ["@nlohmann_json//:json"],
 )

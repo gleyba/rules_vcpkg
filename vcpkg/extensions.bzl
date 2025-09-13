@@ -64,6 +64,9 @@ Environment variable 'BUILDTREE_DIR' and will be available.
     "override_sources": attr.string(
         doc = "Override sources location, useful for debug",
     ),
+    "overlay_sources": attr.label_list(
+        doc = "Overlay sources to add to package srcs, created with `pkg_files`",
+    ),
     "os": attr.string(
         default = "*",
         doc = "Filter by os, e.g. macos, linux, or '*' for any",
@@ -92,6 +95,7 @@ def _vcpkg(mctx):
     packages_cflags = {}
     packages_linkerflags = {}
     packages_override_sources = {}
+    packages_overlay_sources = {}
     pp_to_include_postfixes = {}
     for mod in mctx.modules:
         for bootstrap_defs in mod.tags.bootstrap:
@@ -157,6 +161,9 @@ def _vcpkg(mctx):
 
                 packages_override_sources[configure.package] = configure.override_sources
 
+            for overlay_src in configure.overlay_sources:
+                packages_overlay_sources[Label(overlay_src)] = configure.package
+
         for configure_prefixed in mod.tags.configure_prefixed:
             add_or_extend_list_in_dict(
                 pp_to_include_postfixes,
@@ -196,6 +203,7 @@ def _vcpkg(mctx):
         packages_cflags = packages_cflags,
         packages_linkerflags = packages_linkerflags,
         packages_override_sources = packages_override_sources,
+        packages_overlay_sources = packages_overlay_sources,
         pp_to_include_postfixes = pp_to_include_postfixes,
     )
 
