@@ -185,7 +185,7 @@ int main(int argc, char ** argv) {
 
     if (override_sources) {
         if (!sources_location) {
-            throw std::runtime_error("Can't detect sources location for sources override");
+            throw std::runtime_error("Can't detect sources location for override sources");
         }
 
         copy_sources(
@@ -194,6 +194,21 @@ int main(int argc, char ** argv) {
             fs::copy_options::update_existing,
             false
         );
+    }
+
+    if (cfg_json.contains("overlay_sources") && !cfg_json["overlay_sources"].empty()) {
+        if (!sources_location) {
+            throw std::runtime_error("Can't detect sources location for overlay sources");
+        }
+        for (auto& [dst, src]: cfg_json["overlay_sources"].items()) {
+            auto dst_path = sources_location.value() / dst;
+            auto src_path = fs::absolute(src);
+            fs::copy_file(
+                src_path, 
+                dst_path,
+                fs::copy_options::update_existing
+            );
+        }
     }
 
     return 0;
