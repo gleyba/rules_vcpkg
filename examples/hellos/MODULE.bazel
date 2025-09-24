@@ -73,7 +73,7 @@ vcpkg.configure(
 )
 use_repo(
     vcpkg,
-    "vcpkg",
+    # "vcpkg",
     "vcpkg_bootstrap",
 )
 

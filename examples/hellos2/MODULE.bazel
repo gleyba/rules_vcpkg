@@ -1,0 +1,31 @@
+module(name = "vcpkg_hellos")
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.1.4")
+bazel_dep(name = "rules_vcpkg", version = "0.0.0")
+local_path_override(
+    module_name = "rules_vcpkg",
+    path = "../..",
+)
+
+vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions_2.bzl", "vcpkg")
+vcpkg.bootstrap(
+    release = "2025.08.27",
+    sha256 = "b7ca5a754e4fbaa0f1d36c5f19ceef4ed47c65312fed298bb3dcf73c276dbe9b",
+)
+# use_repo(vcpkg, "vcpkg_bootstrap")
+
+# vcpkg_bootstrap = use_repo_rule("@rules_vcpkg//vcpkg/bootstrap_2:bootstrap.bzl", "bootstrap")
+# vcpkg_bootstrap(
+#     name = "vcpkg_bootstrap",
+#     release = "2025.08.27",
+#     sha256 = "b7ca5a754e4fbaa0f1d36c5f19ceef4ed47c65312fed298bb3dcf73c276dbe9b",
+#     config_settings = {},
+# )
+
+# vcpkg = use_extension("@rules_vcpkg//vcpkg:extensions_2.bzl", "vcpkg")
+# inject_repo(vcpkg, "vcpkg_bootstrap")
+
+vcpkg.install(package = "boost-asio")
+
+use_repo(vcpkg, "vcpkg_bootstrap", "vcpkg")
