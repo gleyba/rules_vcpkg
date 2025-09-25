@@ -75,7 +75,6 @@ def _create_overlay_tripplets(ctx, build_type, additional_sets):
         toolchain_cmake,
     ]
 
-
 def _current_toolchain_impl(ctx):
     additional_sets = {}
     transitive_depsets = []

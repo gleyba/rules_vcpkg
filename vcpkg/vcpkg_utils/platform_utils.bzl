@@ -200,3 +200,13 @@ def platform_utils(rctx):
         definitions = _definitions(rctx),
         match_platform = lambda os, arch: _match_platform(rctx, os, arch),
     )
+
+PLATFORMS_PAIRS = [
+    ("*", "*"),
+    ("macos", "*"),
+    ("macos", "amd64"),
+    ("macos", "arm64"),
+    ("linux", "*"),
+    ("linux", "amd64"),
+    ("linux", "arm64"),
+]

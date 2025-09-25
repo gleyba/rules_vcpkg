@@ -9,9 +9,13 @@ declare = repository_rule(
             mandatory = True,
             doc = "Repository name with vcpkg bootstrap",
         ),
-        "bootstrap_lockfile": attr.label(
+        "lockfile": attr.label(
             mandatory = True,
             doc = "Lockfile with packages dependencies closure",
+        ),
+        "bootstrap_lockfile": attr.label(
+            mandatory = True,
+            doc = "Lockfile genmerated by 'vcpkg_bootstrap' repo, to compare with 'lockfile' for being actual",
         ),
     },
 )

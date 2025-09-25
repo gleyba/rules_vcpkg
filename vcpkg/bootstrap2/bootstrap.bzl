@@ -1,6 +1,7 @@
-load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
-load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
+load("//vcpkg/bootstrap2:configure.bzl", "BOOTSTRAP_CONFIGURE_REPO_ATTRS", "new_bootstrap_configure_ctx")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_additions", "format_inner_dict", "format_inner_list")
+load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
+load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 def _download_vcpkg_tool(rctx, pu):
     rctx.report_progress("Downloading VCPKG tool")
@@ -145,7 +146,7 @@ def _write_templates(rctx, pu):
     rctx.file("vcpkg/scripts/BUILD.bazel", _SCRIPTS_BAZEL)
     rctx.file("vcpkg/triplets/BUILD.bazel", _TRIPLETS_BAZEL)
 
-    ports = [ p.basename for p in rctx.path("vcpkg/ports").readdir() ]
+    ports = [p.basename for p in rctx.path("vcpkg/ports").readdir()]
 
     rctx.file(
         "vcpkg/ports/BUILD.bazel",
@@ -160,7 +161,7 @@ def _write_templates(rctx, pu):
     for port in ports:
         rctx.file(
             "vcpkg/ports/%s/BUILD.bazel" % port,
-            _PORT_BAZEL_TPL.format(port = port)
+            _PORT_BAZEL_TPL.format(port = port),
         )
 
 def _bootrstrap_impl(rctx):
@@ -189,6 +190,9 @@ def _bootrstrap_impl(rctx):
     _initialize(rctx, pu)
     _write_templates(rctx, pu)
 
+    bootstrap_configure_ctx = new_bootstrap_configure_ctx()
+    bootstrap_configure_ctx.fill_from_repo_ctx(rctx)
+
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(reproducible = True)
     else:
@@ -207,9 +211,13 @@ bootstrap = repository_rule(
             mandatory = False,
             doc = "SHA256 sum of release archive",
         ),
+        "lockfile": attr.label(
+            doc = "Json file to lock packages dependencies",
+            mandatory = True,
+        ),
         "config_settings": attr.string_dict(
             doc = "Vcpkg triplet configuration settings",
             mandatory = True,
         ),
-    },
+    } | BOOTSTRAP_CONFIGURE_REPO_ATTRS,
 )
