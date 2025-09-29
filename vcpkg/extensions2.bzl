@@ -1,7 +1,7 @@
 load("//vcpkg/bootstrap/private:default_defs.bzl", "DEAULT_VCPKG_DISTRO_FIXUP_REPLACE", "DEFAULT_CONFIG_SETTINGS")
 load("//vcpkg/bootstrap2:bootstrap.bzl", "bootstrap")
-load("//vcpkg/bootstrap2:configure.bzl", "new_bootstrap_configure_ctx", _configure = "configure")
 load("//vcpkg/bootstrap2:declare.bzl", "declare")
+load("//vcpkg/bootstrap2/private:configure.bzl", "new_bootstrap_configure_ctx", _configure = "configure")
 
 _bootstrap = tag_class(attrs = {
     "release": attr.string(doc = "The vcpkg version, either this or commit must be specified"),
@@ -55,8 +55,12 @@ def _vcpkg(mctx):
         release = cur_bootstrap.release,
         commit = cur_bootstrap.commit,
         sha256 = cur_bootstrap.sha256,
+        packages = list(packages),
         lockfile = cur_bootstrap.lockfile,
         config_settings = cur_bootstrap.config_settings,
+        vcpkg_distro_fixup_replace = cur_bootstrap.vcpkg_distro_fixup_replace,
+        allow_unsupported = cur_bootstrap.allow_unsupported,
+        external_bins = "@vcpkg_external//bin",
         **bootstrap_configure_ctx.to_repo_attrs()
     )
 

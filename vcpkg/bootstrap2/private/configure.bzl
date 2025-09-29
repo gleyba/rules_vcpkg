@@ -77,10 +77,6 @@ def _gen_bootstrap_repo_attrs_for(os, arch):
             mandatory = False,
             doc = "Patches to apply to port directory %s" % doc_postfix,
         ),
-        "%spackages_src_patches" % name_prefix: attr.label_keyed_string_dict(
-            mandatory = False,
-            doc = "Patches to apply to src directory %s" % doc_postfix,
-        ),
     }
 
 def _gen_bootstrap_repo_attrs():
@@ -93,18 +89,17 @@ BOOTSTRAP_CONFIGURE_REPO_ATTRS = _gen_bootstrap_repo_attrs()
 
 def _new_platform_bootstrap_configure_ctx(os, arch):
     packages_port_patches = {}
-    packages_src_patches = {}
     packages_drop_features = {}
 
-    def is_exact_match(config):
-        return config.os == os and config.arch == arch
+    def match_platform(compare_os, compare_arch, is_exact_match):
+        if match_platform:
+            return os == compare_os and arch == compare_arch
+
+        return (os == "*" or os == compare_os) and (arch == "*" or arch == compare_arch)
 
     def add_config(config):
         for patch in configure.port_patches:
             packages_port_patches[patch] = config.package
-
-        for patch in configure.src_patches:
-            packages_src_patches[patch] = config.package
 
         add_or_extend_list_in_dict(
             packages_drop_features,
@@ -115,19 +110,21 @@ def _new_platform_bootstrap_configure_ctx(os, arch):
     def fill_from_repo_ctx(rctx):
         name_prefix = _repo_attr_prefix_for(os, arch)
         packages_port_patches.update(getattr(rctx.attr, "%spackages_port_patches" % name_prefix).items())
-        packages_src_patches.update(getattr(rctx.attr, "%spackages_src_patches" % name_prefix).items())
         packages_drop_features.update(getattr(rctx.attr, "%spackages_drop_features" % name_prefix).items())
 
     def to_repo_attrs():
         name_prefix = _repo_attr_prefix_for(os, arch)
         return {
             "%spackages_port_patches" % name_prefix: packages_port_patches,
-            "%spackages_src_patches" % name_prefix: packages_src_patches,
             "%spackages_drop_features" % name_prefix: packages_drop_features,
         }
 
     return struct(
-        is_exact_match = is_exact_match,
+        os = os,
+        arch = arch,
+        packages_port_patches = packages_port_patches,
+        packages_drop_features = packages_drop_features,
+        match_platform = match_platform,
         add_config = add_config,
         fill_from_repo_ctx = fill_from_repo_ctx,
         to_repo_attrs = to_repo_attrs,
@@ -141,7 +138,7 @@ def new_bootstrap_configure_ctx():
 
     def add_config(config):
         for context in contexts:
-            if context.is_exact_match(config):
+            if context.match_platform(config.os, config.arch, True):
                 context.add_config(config)
                 return
 
@@ -160,8 +157,30 @@ def new_bootstrap_configure_ctx():
             result |= context.to_repo_attrs()
         return result
 
+    def packages_port_patches(os, arch):
+        result = {}
+        for context in contexts:
+            if not context.match_platform(os, arch, False):
+                continue
+
+            result |= context.packages_port_patches
+
+        return result
+
+    def packages_drop_features(os, arch):
+        result = {}
+        for context in contexts:
+            if not context.match_platform(os, arch, False):
+                continue
+
+            result |= context.packages_drop_features
+
+        return result
+
     return struct(
         add_config = add_config,
         fill_from_repo_ctx = fill_from_repo_ctx,
         to_repo_attrs = to_repo_attrs,
+        packages_port_patches = packages_port_patches,
+        packages_drop_features = packages_drop_features,
     )

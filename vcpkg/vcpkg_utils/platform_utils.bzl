@@ -10,25 +10,26 @@ def _is_arm64(rctx):
 def _is_amd64(rctx):
     return rctx.os.arch in ["x86_64", "amd64"]
 
-def _platform_prefix(rctx):
-    os = None
+def _os(rctx):
     if _is_macos(rctx):
-        os = "osx"
+        return "osx"
 
     if _is_linux(rctx):
-        os = "linux"
+        return "linux"
 
-    arch = None
+    fail("Unsupported OS: %s" % rctx.os.name)
+
+def _arch(rctx):
     if _is_arm64(rctx):
-        arch = "arm64"
+        return "arm64"
 
     if _is_amd64(rctx):
-        arch = "amd64"
+        return "amd64"
 
-    if not os or not arch:
-        fail("Unsupported OS/arch: %s/%s" % (rctx.os.name, rctx.os.arch))
+    fail("Unsupported arch: %s" % rctx.os.arch)
 
-    return "%s-%s" % (arch, os)
+def _platform_prefix(rctx):
+    return "%s-%s" % (_arch(rctx), _os(rctx))
 
 def _platform_targets(rctx):
     os = None
@@ -192,6 +193,8 @@ def _match_platform(rctx, os, arch):
 def platform_utils(rctx):
     """Platform utils for vcpkg"""
     return struct(
+        os = _os(rctx),
+        arch = _arch(rctx),
         prefix = _platform_prefix(rctx),
         targets = _platform_targets(rctx),
         downloads = _platform_downloads(rctx),
@@ -210,3 +213,13 @@ PLATFORMS_PAIRS = [
     ("linux", "amd64"),
     ("linux", "arm64"),
 ]
+
+PLATFORMS_PAIRS_HIERARCHICAL = {
+    ("*", "*"): None,
+    ("macos", "*"): ("*", "*"),
+    ("macos", "amd64"): ("macos", "*"),
+    ("macos", "arm64"): ("macos", "*"),
+    ("linux", "*"): ("*", "*"),
+    ("linux", "amd64"): ("linux", "*"),
+    ("linux", "arm64"): ("linux", "*"),
+}

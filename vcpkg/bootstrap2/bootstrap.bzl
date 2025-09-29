@@ -1,6 +1,9 @@
-load("//vcpkg/bootstrap2:configure.bzl", "BOOTSTRAP_CONFIGURE_REPO_ATTRS", "new_bootstrap_configure_ctx")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
+load("//vcpkg/bootstrap2/private:configure.bzl", "BOOTSTRAP_CONFIGURE_REPO_ATTRS", "new_bootstrap_configure_ctx")
+load("//vcpkg/bootstrap2/private:generate_lockfile_data.bzl", "generate_lockfile_data")
 load("//vcpkg/vcpkg_utils:format_utils.bzl", "format_additions", "format_inner_dict", "format_inner_list")
 load("//vcpkg/vcpkg_utils:hash_utils.bzl", "base64_encode_hexstr")
+load("//vcpkg/vcpkg_utils:logging.bzl", "L")
 load("//vcpkg/vcpkg_utils:platform_utils.bzl", "platform_utils")
 
 def _download_vcpkg_tool(rctx, pu):
@@ -30,6 +33,8 @@ exec "${SCRIPT_DIR}/vcpkg/vcpkg" "$@"
 """
 
 def _initialize(rctx, pu):
+    _download_vcpkg_tool(rctx, pu)
+
     rctx.report_progress("VCPKG: Initializing")
 
     rctx.file(
@@ -47,8 +52,43 @@ def _initialize(rctx, pu):
         ),
     )
 
+def _list_to_pairs(items):
+    return [
+        (items[i], items[i + 1])
+        for i in range(0, len(items), 2)
+    ]
+
+def _perform_distro_fixups(rctx, bootstrap_configure_ctx, pu):
+    rctx.report_progress("VCPKG: distro fixups and ports patching")
+
+    for file, replaces in rctx.attr.vcpkg_distro_fixup_replace.items():
+        to_check_path = rctx.path("vcpkg/%s" % file)
+        if not to_check_path.exists:
+            L.warn("Can't find '%s' file in VCPKG distro" % file)
+            continue
+
+        data = rctx.read(to_check_path)
+        for pattern, replace in _list_to_pairs(replaces):
+            data = data.replace(pattern, replace)
+
+        rctx.delete(to_check_path)
+        rctx.file(to_check_path, data)
+
+    for patch_file, package in bootstrap_configure_ctx.packages_port_patches(pu.os, pu.arch).items():
+        patch(
+            rctx,
+            patches = [patch_file],
+            patch_args = [
+                "-d",
+                "vcpkg/ports/%s" % package,
+            ],
+        )
+        rctx.watch(patch_file)
+
 _BUILD_BAZEL_TPL = """\
 load("@rules_vcpkg//vcpkg/toolchain:toolchain.bzl", "vcpkg_toolchain")
+
+exports_files(["lockfile.json"])
 
 filegroup(
     name = "all_files",
@@ -66,13 +106,7 @@ filegroup(
 vcpkg_toolchain(
     name = "vcpkg",
     vcpkg_tool = "vcpkg_wrapper.sh",
-    vcpkg_files = [
-        "//vcpkg:vcpkg",
-        "//vcpkg:LICENSE.txt",
-        "//vcpkg:.vcpkg-root",
-        "//vcpkg/scripts",
-        "//vcpkg/triplets",
-    ],
+    vcpkg_files = [":all_files"],
     config_settings = {config_settings},
 )
 
@@ -186,12 +220,20 @@ def _bootrstrap_impl(rctx):
 
     pu = platform_utils(rctx)
 
-    _download_vcpkg_tool(rctx, pu)
     _initialize(rctx, pu)
-    _write_templates(rctx, pu)
 
     bootstrap_configure_ctx = new_bootstrap_configure_ctx()
     bootstrap_configure_ctx.fill_from_repo_ctx(rctx)
+
+    _perform_distro_fixups(rctx, bootstrap_configure_ctx, pu)
+
+    lockfile_data, err = generate_lockfile_data(rctx, rctx.attr.packages, bootstrap_configure_ctx)
+    if err != None:
+        fail(err)
+
+    rctx.file("lockfile.json", json.encode_indent(lockfile_data))
+
+    _write_templates(rctx, pu)
 
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(reproducible = True)
@@ -211,12 +253,27 @@ bootstrap = repository_rule(
             mandatory = False,
             doc = "SHA256 sum of release archive",
         ),
+        "packages": attr.string_list(
+            mandatory = True,
+            doc = "Packages to install",
+        ),
         "lockfile": attr.label(
             doc = "Json file to lock packages dependencies",
             mandatory = True,
         ),
         "config_settings": attr.string_dict(
             doc = "Vcpkg triplet configuration settings",
+            mandatory = True,
+        ),
+        "vcpkg_distro_fixup_replace": attr.string_list_dict(
+            mandatory = False,
+            doc = "Key is file path and value - list of sequential pairs of values, pattern to search and relace to",
+        ),
+        "allow_unsupported": attr.bool(
+            default = False,
+            doc = "Allow initialization of unsupported packages for host platform",
+        ),
+        "external_bins": attr.label(
             mandatory = True,
         ),
     } | BOOTSTRAP_CONFIGURE_REPO_ATTRS,
